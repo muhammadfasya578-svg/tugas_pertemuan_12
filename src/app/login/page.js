@@ -1,0 +1,196 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { loginUser, initLocalStorage } from '@/lib/storage'
+import { BookOpen, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState('')
+  const router = useRouter()
+
+  useEffect(() => {
+    initLocalStorage()
+  }, [])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    setErrorMsg('')
+    setLoading(true)
+
+    const res = loginUser(email, password)
+    setLoading(false)
+
+    if (res.error) {
+      setErrorMsg(res.error)
+    } else {
+      if (res.user.role === 'admin') {
+        router.push('/admin')
+      } else {
+        router.push('/')
+      }
+      router.refresh()
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-emerald-50/50 via-slate-50 to-slate-50">
+      <div className="w-full max-w-md">
+        {/* Logo / Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 mb-3 shadow-xs">
+            <BookOpen className="w-7 h-7" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            Masuk ke <span className="text-emerald-600">Perpus</span>
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Pinjam buku favoritmu dengan mudah dan cepat
+          </p>
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+          {errorMsg && (
+            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-start gap-3 text-sm">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-slate-700 mb-1.5"
+              >
+                Email
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin1@perpus.com atau user@perpus.com"
+                  className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-700 mb-1.5"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full h-11 pl-10 pr-11 text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 rounded-xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Memproses...</span>
+                </>
+              ) : (
+                'Masuk'
+              )}
+            </button>
+          </form>
+
+          {/* Quick Demo Credentials Box */}
+          <div className="mt-6 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5 text-slate-600">
+            <p className="font-semibold text-slate-800">Akun Tersedia (Langsung Klik / Ketik):</p>
+            <div className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200">
+              <div>
+                <p className="font-medium text-slate-900">Admin 1</p>
+                <p className="text-slate-500">admin1@perpus.com (adminpassword123)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('admin1@perpus.com')
+                  setPassword('adminpassword123')
+                }}
+                className="text-emerald-600 hover:text-emerald-700 font-semibold px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100"
+              >
+                Gunakan
+              </button>
+            </div>
+            <div className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200">
+              <div>
+                <p className="font-medium text-slate-900">User / Pembaca</p>
+                <p className="text-slate-500">user@perpus.com (userpassword123)</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail('user@perpus.com')
+                  setPassword('userpassword123')
+                }}
+                className="text-emerald-600 hover:text-emerald-700 font-semibold px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100"
+              >
+                Gunakan
+              </button>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="mt-6 pt-6 border-t border-slate-100 text-center">
+            <p className="text-sm text-slate-500">
+              Belum punya akun?{' '}
+              <Link
+                href="/register"
+                className="font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+              >
+                Daftar sekarang
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
