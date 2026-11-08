@@ -10,3 +10,21 @@ body {
   color: var(--foreground);
   min-height: 100vh;
 }
+
+/* R-39: Interactive Affordances & Accessible Cursors */
+button,
+a[href],
+[role="button"],
+summary,
+select,
+input[type="submit"],
+input[type="button"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"],
+input:disabled {
+  cursor: not-allowed;
+}
+

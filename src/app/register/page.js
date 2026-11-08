@@ -47,13 +47,13 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         {/* Logo / Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 mb-3 shadow-xs">
-            <BookOpen className="w-7 h-7" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 mb-3 shadow-xs">
+            <BookOpen className="w-7 h-7" aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Daftar Akun <span className="text-emerald-600">Perpus</span>
+            Daftar Akun <span className="text-emerald-700">Perpus</span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-600 mt-1">
             Buat akun untuk mulai meminjam buku perpustakaan
           </p>
         </div>
@@ -61,8 +61,8 @@ export default function RegisterPage() {
         {/* Card */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
           {errorMsg && (
-            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-600 flex items-start gap-3 text-sm">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-start gap-3 text-sm" role="alert">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-600" aria-hidden="true" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -76,8 +76,8 @@ export default function RegisterPage() {
                 Nama Lengkap
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <User className="w-5 h-5" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <User className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <input
                   id="name"
@@ -99,8 +99,8 @@ export default function RegisterPage() {
                 Email
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Mail className="w-5 h-5" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <Mail className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <input
                   id="email"
@@ -122,8 +122,8 @@ export default function RegisterPage() {
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-5 h-5" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <Lock className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <input
                   id="password"
@@ -138,13 +138,13 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-700 transition-colors"
                   aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                 >
                   {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
+                    <EyeOff className="w-5 h-5" aria-hidden="true" />
                   ) : (
-                    <Eye className="w-5 h-5" />
+                    <Eye className="w-5 h-5" aria-hidden="true" />
                   )}
                 </button>
               </div>
@@ -158,8 +158,8 @@ export default function RegisterPage() {
                 Konfirmasi Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-5 h-5" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <Lock className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <input
                   id="confirmPassword"
@@ -177,11 +177,11 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 mt-2 rounded-xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-60 disabled:cursor-not-allowed transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
+              className="w-full h-11 mt-2 rounded-xl bg-emerald-700 text-white font-medium text-sm hover:bg-emerald-800 active:bg-emerald-900 disabled:opacity-60 transition flex items-center justify-center gap-2 shadow-xs"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                   <span>Mendaftarkan...</span>
                 </>
               ) : (
@@ -192,11 +192,11 @@ export default function RegisterPage() {
 
           {/* Divider */}
           <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-600">
               Sudah punya akun?{' '}
               <Link
                 href="/login"
-                className="font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                className="font-semibold text-emerald-700 hover:text-emerald-800 hover:underline"
               >
                 Masuk di sini
               </Link>

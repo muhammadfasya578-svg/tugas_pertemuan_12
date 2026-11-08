@@ -39,6 +39,17 @@ export default function AdminBooksManager() {
     loadBooks()
   }, [])
 
+  // R-32: Keyboard Escape listener for modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isModalOpen) {
+        closeModal()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isModalOpen])
+
   const openAddModal = () => {
     setModalMode('add')
     setSelectedBook(null)
@@ -112,14 +123,15 @@ export default function AdminBooksManager() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <Search className="w-4 h-4" />
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+            <Search className="w-4 h-4 text-slate-500" aria-hidden="true" />
           </div>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari buku, penulis, atau kategori..."
+            aria-label="Cari buku, penulis, atau kategori"
             className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           />
         </div>
@@ -127,9 +139,9 @@ export default function AdminBooksManager() {
         {/* Add Button */}
         <button
           onClick={openAddModal}
-          className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 active:bg-emerald-800 transition shadow-xs cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 active:bg-emerald-800 transition shadow-xs"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4" aria-hidden="true" />
           <span>Tambah Buku Baru</span>
         </button>
       </div>
@@ -138,7 +150,7 @@ export default function AdminBooksManager() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
               <tr>
                 <th scope="col" className="px-6 py-4">ID</th>
                 <th scope="col" className="px-6 py-4">Judul & Penulis</th>
@@ -151,14 +163,14 @@ export default function AdminBooksManager() {
               {filteredBooks.length > 0 ? (
                 filteredBooks.map((book) => (
                   <tr key={book.id} className="hover:bg-slate-50/80 transition">
-                    <td className="px-6 py-4 text-xs font-mono text-slate-400">
+                    <td className="px-6 py-4 text-xs font-mono text-slate-500">
                       #{book.id}
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-semibold text-slate-900">
                         {book.title}
                       </div>
-                      <div className="text-xs text-slate-500">{book.author}</div>
+                      <div className="text-xs text-slate-600">{book.author}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -168,28 +180,32 @@ export default function AdminBooksManager() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`font-semibold ${
-                          book.stock > 0 ? 'text-slate-900' : 'text-red-500'
+                          book.stock > 0 ? 'text-slate-900' : 'text-red-600'
                         }`}
                       >
                         {book.stock}
                       </span>{' '}
-                      <span className="text-xs text-slate-400">eksemplar</span>
+                      <span className="text-xs text-slate-500">eksemplar</span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <div className="inline-flex items-center gap-2">
                         <button
+                          type="button"
                           onClick={() => openEditModal(book)}
-                          className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition cursor-pointer"
+                          className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
                           title="Edit Buku"
+                          aria-label={`Edit data buku ${book.title}`}
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleDelete(book)}
-                          className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                          className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                           title="Hapus Buku"
+                          aria-label={`Hapus buku ${book.title}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </button>
                       </div>
                     </td>
@@ -197,7 +213,7 @@ export default function AdminBooksManager() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-500 text-sm">
+                  <td colSpan="5" className="px-6 py-12 text-center text-slate-600 text-sm">
                     Tidak ada buku yang sesuai dengan pencarian.
                   </td>
                 </tr>
@@ -209,17 +225,24 @@ export default function AdminBooksManager() {
 
       {/* Modal Dialog Tambah / Edit */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-book-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs"
+        >
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 id="modal-book-title" className="text-lg font-bold text-slate-900">
                 {modalMode === 'add' ? 'Tambah Buku Baru' : 'Edit Data Buku'}
               </h3>
               <button
+                type="button"
                 onClick={closeModal}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                aria-label="Tutup dialog"
+                className="text-slate-500 hover:text-slate-700 p-1 rounded-lg"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </button>
             </div>
 

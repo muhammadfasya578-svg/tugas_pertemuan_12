@@ -27,10 +27,10 @@ export default function AdminUserPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
-          <Users className="w-6 h-6 text-emerald-600" />
+          <Users className="w-6 h-6 text-emerald-700" aria-hidden="true" />
           <span>Daftar Pengguna</span>
         </h1>
-        <p className="text-slate-500 text-sm mt-1">
+        <p className="text-slate-600 text-sm mt-1">
           Daftar seluruh akun terdaftar dan jumlah peminjaman buku aktif masing-masing pengguna.
         </p>
       </div>
@@ -38,7 +38,7 @@ export default function AdminUserPage() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
               <tr>
                 <th scope="col" className="px-6 py-4">Nama Pengguna</th>
                 <th scope="col" className="px-6 py-4">Email</th>
@@ -55,7 +55,7 @@ export default function AdminUserPage() {
                   <tr key={p.id} className="hover:bg-slate-50/80 transition">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-semibold text-xs">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-semibold text-xs">
                           {p.name?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <span className="font-semibold text-slate-900">
@@ -69,12 +69,12 @@ export default function AdminUserPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {isAdmin ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          <Shield className="w-3.5 h-3.5" />
+                          <Shield className="w-3.5 h-3.5" aria-hidden="true" />
                           Admin
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                          <User className="w-3.5 h-3.5" />
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                          <User className="w-3.5 h-3.5" aria-hidden="true" />
                           User
                         </span>
                       )}
@@ -84,7 +84,7 @@ export default function AdminUserPage() {
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                           activeCount > 0
                             ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                            : 'bg-slate-50 text-slate-400'
+                            : 'bg-slate-100 text-slate-600'
                         }`}
                       >
                         {activeCount} / 3 buku

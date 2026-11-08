@@ -39,9 +39,7 @@ export const INITIAL_LOANS = [
   },
 ]
 
-// ========================
-// INITIALIZATION & SEEDER
-// ========================
+// Seeder initialization
 export function initLocalStorage() {
   if (typeof window === 'undefined') return
 
@@ -65,9 +63,7 @@ export function resetToDefaultSeed() {
   return true
 }
 
-// ========================
-// AUTH & SESSION
-// ========================
+// Auth and session helpers
 export function getSession() {
   if (typeof window === 'undefined') return null
   const sessionStr = localStorage.getItem('perpus_session')
@@ -146,9 +142,7 @@ export function getUsers() {
   return data ? JSON.parse(data) : INITIAL_USERS
 }
 
-// ========================
-// BOOKS
-// ========================
+// Books data operations
 export function getBooks() {
   if (typeof window === 'undefined') return INITIAL_BOOKS
   initLocalStorage()
@@ -208,9 +202,7 @@ export function deleteBookData(id) {
   return { success: true }
 }
 
-// ========================
-// LOANS (PINJAM & KEMBALIKAN)
-// ========================
+// Loans operations
 export function getLoans() {
   if (typeof window === 'undefined') return INITIAL_LOANS
   initLocalStorage()

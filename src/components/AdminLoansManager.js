@@ -78,14 +78,15 @@ export default function AdminLoansManager() {
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="relative flex-1 max-w-sm">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <Search className="w-4 h-4" />
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+            <Search className="w-4 h-4 text-slate-500" aria-hidden="true" />
           </div>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari peminjam, email, atau judul buku..."
+            aria-label="Cari peminjam, email, atau judul buku"
             className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           />
         </div>
@@ -103,10 +104,10 @@ export default function AdminLoansManager() {
               <button
                 key={item.id}
                 onClick={() => setFilterStatus(item.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition cursor-pointer ${
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition ${
                   isActive
-                    ? 'bg-emerald-600 text-white font-semibold'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    ? 'bg-emerald-700 text-white font-semibold'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
                 {item.label}
@@ -120,7 +121,7 @@ export default function AdminLoansManager() {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
               <tr>
                 <th scope="col" className="px-6 py-4">Peminjam</th>
                 <th scope="col" className="px-6 py-4">Buku</th>
@@ -160,7 +161,7 @@ export default function AdminLoansManager() {
                         <div className="font-medium text-slate-900 line-clamp-1">
                           {loan.bookTitle}
                         </div>
-                        <div className="text-xs text-slate-400">
+                        <div className="text-xs text-slate-500">
                           {loan.bookCategory}
                         </div>
                       </td>
@@ -180,14 +181,15 @@ export default function AdminLoansManager() {
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         {loan.status === 'dipinjam' ? (
                           <button
+                            type="button"
                             onClick={() => handleReturn(loan.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 transition cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 transition"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
+                            <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>Kembalikan</span>
                           </button>
                         ) : (
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-slate-500">
                             {loan.returned_at ? `Dikembalikan ${formatDate(loan.returned_at)}` : 'Selesai'}
                           </span>
                         )}
@@ -197,7 +199,7 @@ export default function AdminLoansManager() {
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500 text-sm">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-600 text-sm">
                     Tidak ada transaksi peminjaman yang cocok.
                   </td>
                 </tr>

@@ -31,49 +31,45 @@ export default function CatalogView({ initialBooks }) {
   return (
     <div className="space-y-8">
       {/* Hero Section & Search Bar */}
-      <div className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 rounded-3xl p-6 sm:p-10 text-white shadow-sm relative overflow-hidden">
+      <div className="bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 rounded-3xl p-6 sm:p-10 text-white shadow-sm relative overflow-hidden">
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-emerald-100 mb-4 border border-white/10">
-            <BookOpen className="w-3.5 h-3.5 text-emerald-300" />
-            <span>Katalog Perpustakaan Online</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
             Temukan & Pinjam Buku Favoritmu
           </h1>
-          <p className="mt-2 text-emerald-100/90 text-sm sm:text-base leading-relaxed">
+          <p className="mt-2 text-emerald-50 text-sm sm:text-base leading-relaxed">
             Jelajahi koleksi novel, teknologi, pengembangan diri, dan pengetahuan umum. Pinjam instan dengan durasi 7 hari.
           </p>
 
           {/* Search Box */}
           <div className="mt-6 relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-              <Search className="w-5 h-5 text-slate-400" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500">
+              <Search className="w-5 h-5 text-slate-500" aria-hidden="true" />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari judul buku atau nama penulis..."
-              className="w-full h-12 pl-11 pr-4 rounded-2xl bg-white text-slate-900 placeholder-slate-400 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white"
+              aria-label="Cari judul buku atau nama penulis"
+              className="w-full h-12 pl-11 pr-14 rounded-2xl bg-white text-slate-900 placeholder-slate-500 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:bg-white"
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-4 flex items-center text-xs text-slate-400 hover:text-slate-600"
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-xs font-medium text-slate-600 hover:text-slate-900"
+                aria-label="Hapus kata kunci pencarian"
               >
                 Hapus
               </button>
             )}
           </div>
         </div>
-
-        {/* Decorative circle */}
-        <div className="absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-emerald-500/20 blur-2xl pointer-events-none" />
       </div>
 
       {/* Filter Kategori Chips */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-1">
+        <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider mr-1">
           Kategori:
         </span>
         {categories.map((cat) => {
@@ -82,10 +78,10 @@ export default function CatalogView({ initialBooks }) {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition cursor-pointer ${
+              className={`min-h-[40px] px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition ${
                 isActive
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  ? 'bg-emerald-700 text-white shadow-xs font-semibold'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               {cat}
@@ -103,13 +99,13 @@ export default function CatalogView({ initialBooks }) {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
-            <BookX className="w-8 h-8" />
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-4">
+            <BookX className="w-8 h-8" aria-hidden="true" />
           </div>
           <h3 className="text-base font-semibold text-slate-900">
             Tidak ada buku ditemukan
           </h3>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-600 mt-1">
             Coba ubah kata kunci pencarian atau pilih kategori lain.
           </p>
           {(searchQuery || selectedCategory !== 'Semua') && (
@@ -118,7 +114,7 @@ export default function CatalogView({ initialBooks }) {
                 setSearchQuery('')
                 setSelectedCategory('Semua')
               }}
-              className="mt-4 text-xs font-semibold text-emerald-600 hover:text-emerald-700 underline cursor-pointer"
+              className="mt-4 text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline"
             >
               Reset Filter
             </button>
