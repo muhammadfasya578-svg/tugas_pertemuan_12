@@ -4,7 +4,7 @@ let supabaseInstance = null
 
 export function getSupabase() {
   if (typeof window === 'undefined') return null
-  if (!supabaseInstance && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  if (!supabaseInstance && process.env.SUPABASE_URL) {
     try {
       supabaseInstance = createClient()
     } catch {

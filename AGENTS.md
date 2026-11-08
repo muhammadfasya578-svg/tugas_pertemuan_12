@@ -30,8 +30,8 @@ Web sederhana untuk peminjaman buku dengan login dan 2 role (`admin` & `user`). 
 
 ### Environment (`.env.local`)
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://oeoutziokvtkwjsxeves.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_PBApL-Ock4okOdg8_IuGFQ_oEyZ3t8O
+SUPABASE_URL=https://oeoutziokvtkwjsxeves.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_PBApL-Ock4okOdg8_IuGFQ_oEyZ3t8O
 ```
 - Hanya memakai **publishable key**. Jangan pernah memakai atau menaruh `secret` / `service_role` key di kode frontend atau repo.
 - `.env.local` tidak boleh di-commit (sudah masuk `.gitignore` bawaan Next.js).
