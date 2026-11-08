@@ -48,12 +48,12 @@ function BookDetailContent() {
     }
   }, [id])
 
-  const handleBorrow = () => {
+  const handleBorrow = async () => {
     setErrorMsg('')
     setSuccessMsg('')
     setLoading(true)
 
-    const res = borrowBookData(id, user)
+    const res = await borrowBookData(id, user)
     setLoading(false)
 
     if (res.error) {

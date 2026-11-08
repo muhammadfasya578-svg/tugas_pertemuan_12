@@ -18,12 +18,12 @@ export default function LoginPage() {
     initLocalStorage()
   }, [])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMsg('')
     setLoading(true)
 
-    const res = loginUser(email, password)
+    const res = await loginUser(email, password)
     setLoading(false)
 
     if (res.error) {

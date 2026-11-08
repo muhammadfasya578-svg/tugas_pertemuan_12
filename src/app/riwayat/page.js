@@ -40,11 +40,11 @@ export default function RiwayatPage() {
     loadData()
   }, [])
 
-  const handleReturn = (loanId) => {
+  const handleReturn = async (loanId) => {
     const confirmed = window.confirm('Apakah kamu yakin ingin mengembalikan buku ini?')
     if (!confirmed) return
 
-    const res = returnBookData(loanId, user)
+    const res = await returnBookData(loanId, user)
     if (res.error) {
       alert(res.error)
     } else {

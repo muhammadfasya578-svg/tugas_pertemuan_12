@@ -34,13 +34,13 @@ export default function AdminLoansManager() {
     loadLoans()
   }, [])
 
-  const handleReturn = (loanId) => {
+  const handleReturn = async (loanId) => {
     const confirmed = window.confirm(
       'Konfirmasi pengembalian buku ini untuk peminjam?'
     )
     if (!confirmed) return
 
-    const res = returnBookData(loanId, currentUser)
+    const res = await returnBookData(loanId, currentUser)
     if (res?.error) {
       alert(res.error)
     } else {

@@ -77,15 +77,15 @@ export default function AdminBooksManager() {
     setErrorMsg('')
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMsg('')
 
     let res
     if (modalMode === 'add') {
-      res = addBook({ title, author, category, stock })
+      res = await addBook({ title, author, category, stock })
     } else {
-      res = updateBookData(selectedBook.id, { title, author, category, stock })
+      res = await updateBookData(selectedBook.id, { title, author, category, stock })
     }
 
     if (res?.error) {
@@ -96,13 +96,13 @@ export default function AdminBooksManager() {
     }
   }
 
-  const handleDelete = (book) => {
+  const handleDelete = async (book) => {
     const confirmed = window.confirm(
       `Yakin ingin menghapus buku "${book.title}"?`
     )
     if (!confirmed) return
 
-    const res = deleteBookData(book.id)
+    const res = await deleteBookData(book.id)
     if (res?.error) {
       alert(res.error)
     } else {

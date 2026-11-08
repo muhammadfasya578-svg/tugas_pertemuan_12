@@ -16,7 +16,7 @@ export default function RegisterPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const router = useRouter()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMsg('')
 
@@ -31,7 +31,7 @@ export default function RegisterPage() {
     }
 
     setLoading(true)
-    const res = registerUser(name, email, password)
+    const res = await registerUser(name, email, password)
     setLoading(false)
 
     if (res.error) {
