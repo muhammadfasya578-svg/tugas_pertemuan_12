@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420" width="300" height="420">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="50%" stop-color="#115e59" />
+      <stop offset="100%" stop-color="#134e4a" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="420" rx="16" fill="url(#bg)"/>
+  <rect x="20" y="24" width="80" height="20" rx="10" fill="#2dd4bf" fill-opacity="0.25"/>
+  <text x="60" y="38" font-family="system-ui, sans-serif" font-size="10" font-weight="700" fill="#ccfbf1" text-anchor="middle">TEKNOLOGI</text>
+  <path d="M120 145 L100 165 L120 185 M180 145 L200 165 L180 185 M160 140 L140 190" stroke="#5eead4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <text x="150" y="260" font-family="system-ui, sans-serif" font-size="24" font-weight="800" fill="#ffffff" text-anchor="middle">Clean Code</text>
+  <text x="150" y="290" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#ccfbf1" text-anchor="middle">Robert C. Martin</text>
+  <line x1="120" y1="310" x2="180" y2="310" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round"/>
+</svg>

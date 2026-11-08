@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import Navbar from '@/components/Navbar'
 import { getBookById, getLoans, borrowBookData, getSession } from '@/lib/storage'
 import {
@@ -98,11 +99,16 @@ function BookDetailContent() {
 
         {/* Card Detail Buku (2 Kolom) */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden grid grid-cols-1 md:grid-cols-12">
-          {/* Kolom Kiri: Cover Placeholder */}
+          {/* Kolom Kiri: Cover Image using next/image */}
           <div className="md:col-span-5 bg-slate-50 p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-200">
-            <div className="w-28 h-28 rounded-3xl bg-white shadow-sm flex items-center justify-center text-emerald-700 mb-4">
-              <BookOpen className="w-14 h-14" aria-hidden="true" />
-            </div>
+            <Image
+              src={book.cover || '/covers/default-book.svg'}
+              alt={`Sampul buku ${book.title}`}
+              width={220}
+              height={308}
+              priority
+              className="rounded-2xl shadow-md object-cover mb-4"
+            />
             <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full uppercase tracking-wider">
               {book.category}
             </span>

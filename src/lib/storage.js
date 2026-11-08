@@ -1,14 +1,14 @@
 // Helper Database LocalStorage untuk Aplikasi Perpus
 
 export const INITIAL_BOOKS = [
-  { id: 1, title: 'Laskar Pelangi', author: 'Andrea Hirata', category: 'Novel', stock: 3 },
-  { id: 2, title: 'Bumi Manusia', author: 'Pramoedya A. Toer', category: 'Novel', stock: 2 },
-  { id: 3, title: 'Filosofi Teras', author: 'Henry Manampiring', category: 'Self-help', stock: 4 },
-  { id: 4, title: 'Atomic Habits', author: 'James Clear', category: 'Self-help', stock: 2 },
-  { id: 5, title: 'Clean Code', author: 'Robert C. Martin', category: 'Teknologi', stock: 3 },
-  { id: 6, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', category: 'Teknologi', stock: 1 },
-  { id: 7, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'Sejarah', stock: 2 },
-  { id: 8, title: 'Cantik Itu Luka', author: 'Eka Kurniawan', category: 'Novel', stock: 0 },
+  { id: 1, title: 'Laskar Pelangi', author: 'Andrea Hirata', category: 'Novel', stock: 3, cover: '/covers/laskar-pelangi.svg' },
+  { id: 2, title: 'Bumi Manusia', author: 'Pramoedya A. Toer', category: 'Novel', stock: 2, cover: '/covers/bumi-manusia.svg' },
+  { id: 3, title: 'Filosofi Teras', author: 'Henry Manampiring', category: 'Self-help', stock: 4, cover: '/covers/filosofi-teras.svg' },
+  { id: 4, title: 'Atomic Habits', author: 'James Clear', category: 'Self-help', stock: 2, cover: '/covers/atomic-habits.svg' },
+  { id: 5, title: 'Clean Code', author: 'Robert C. Martin', category: 'Teknologi', stock: 3, cover: '/covers/clean-code.svg' },
+  { id: 6, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', category: 'Teknologi', stock: 1, cover: '/covers/the-pragmatic-programmer.svg' },
+  { id: 7, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'Sejarah', stock: 2, cover: '/covers/sapiens.svg' },
+  { id: 8, title: 'Cantik Itu Luka', author: 'Eka Kurniawan', category: 'Novel', stock: 0, cover: '/covers/cantik-itu-luka.svg' },
 ]
 
 export const INITIAL_USERS = [
@@ -155,7 +155,7 @@ export function getBookById(id) {
   return books.find((b) => Number(b.id) === Number(id)) || null
 }
 
-export function addBook({ title, author, category, stock }) {
+export function addBook({ title, author, category, stock, cover }) {
   const books = getBooks()
   const newBook = {
     id: Date.now(),
@@ -163,13 +163,14 @@ export function addBook({ title, author, category, stock }) {
     author: author.trim(),
     category: category.trim(),
     stock: parseInt(stock, 10) || 0,
+    cover: cover || '/covers/default-book.svg',
   }
   books.push(newBook)
   localStorage.setItem('perpus_books', JSON.stringify(books))
   return { success: true, book: newBook }
 }
 
-export function updateBookData(id, { title, author, category, stock }) {
+export function updateBookData(id, { title, author, category, stock, cover }) {
   const books = getBooks()
   const index = books.findIndex((b) => Number(b.id) === Number(id))
   if (index === -1) return { error: 'Buku tidak ditemukan' }
@@ -180,6 +181,7 @@ export function updateBookData(id, { title, author, category, stock }) {
     author: author.trim(),
     category: category.trim(),
     stock: parseInt(stock, 10) || 0,
+    cover: cover || books[index].cover || '/covers/default-book.svg',
   }
   localStorage.setItem('perpus_books', JSON.stringify(books))
   return { success: true, book: books[index] }

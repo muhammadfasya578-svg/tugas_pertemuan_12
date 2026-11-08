@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420" width="300" height="420">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#451a03" />
+      <stop offset="50%" stop-color="#78350f" />
+      <stop offset="100%" stop-color="#1c1917" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="420" rx="16" fill="url(#bg)"/>
+  <rect x="20" y="24" width="80" height="20" rx="10" fill="#f59e0b" fill-opacity="0.25"/>
+  <text x="60" y="38" font-family="system-ui, sans-serif" font-size="10" font-weight="700" fill="#fef3c7" text-anchor="middle">SELF-HELP</text>
+  <circle cx="150" cy="155" r="30" stroke="#f59e0b" stroke-width="2" fill="none"/>
+  <circle cx="150" cy="155" r="45" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6 6" fill="none"/>
+  <circle cx="150" cy="155" r="6" fill="#f59e0b"/>
+  <text x="150" y="260" font-family="system-ui, sans-serif" font-size="24" font-weight="800" fill="#ffffff" text-anchor="middle">Atomic Habits</text>
+  <text x="150" y="290" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#fde68a" text-anchor="middle">James Clear</text>
+  <line x1="120" y1="310" x2="180" y2="310" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+</svg>

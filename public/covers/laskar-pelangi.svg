@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 420" width="300" height="420">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="50%" stop-color="#0369a1" />
+      <stop offset="100%" stop-color="#075985" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="420" rx="16" fill="url(#bg)"/>
+  <rect x="20" y="24" width="60" height="20" rx="10" fill="#38bdf8" fill-opacity="0.25"/>
+  <text x="50" y="38" font-family="system-ui, sans-serif" font-size="10" font-weight="700" fill="#e0f2fe" text-anchor="middle">NOVEL</text>
+  <circle cx="150" cy="170" r="50" fill="#38bdf8" fill-opacity="0.15"/>
+  <path d="M125 170 C135 150, 165 150, 175 170 C165 190, 135 190, 125 170 Z" fill="#bae6fd" fill-opacity="0.8"/>
+  <text x="150" y="270" font-family="system-ui, sans-serif" font-size="24" font-weight="800" fill="#ffffff" text-anchor="middle">Laskar Pelangi</text>
+  <text x="150" y="300" font-family="system-ui, sans-serif" font-size="13" font-weight="500" fill="#bae6fd" text-anchor="middle">Andrea Hirata</text>
+  <line x1="120" y1="320" x2="180" y2="320" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+</svg>

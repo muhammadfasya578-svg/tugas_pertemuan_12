@@ -1,17 +1,22 @@
 import Link from 'next/link'
-import { BookOpen } from 'lucide-react'
+import Image from 'next/image'
 
 export default function BookCard({ book }) {
   const isAvailable = book.stock > 0
+  const coverSrc = book.cover || '/covers/default-book.svg'
 
   return (
     <div className="group rounded-2xl border border-slate-200 bg-white shadow-xs hover:border-emerald-300 transition-colors duration-200 flex flex-col overflow-hidden">
-      {/* Cover Placeholder */}
-      <div className="h-44 bg-slate-50 flex flex-col items-center justify-center p-6 border-b border-slate-100 relative">
-        <div className="w-16 h-16 rounded-2xl bg-white shadow-xs flex items-center justify-center text-emerald-700 transition-transform">
-          <BookOpen className="w-8 h-8" aria-hidden="true" />
-        </div>
-        <span className="mt-3 text-xs font-semibold text-emerald-800 bg-emerald-100/90 px-3 py-1 rounded-lg">
+      {/* Cover Image using next/image */}
+      <div className="h-52 bg-slate-50 flex items-center justify-center p-4 border-b border-slate-100 relative">
+        <Image
+          src={coverSrc}
+          alt={`Sampul buku ${book.title}`}
+          width={130}
+          height={182}
+          className="rounded-lg shadow-xs object-cover transition-transform duration-200 group-hover:scale-102"
+        />
+        <span className="absolute top-3 right-3 text-[11px] font-semibold text-emerald-900 bg-white/95 px-2.5 py-0.5 rounded-md border border-slate-200 shadow-2xs">
           {book.category}
         </span>
       </div>
