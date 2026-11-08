@@ -1,0 +1,46 @@
+// Prisma Schema untuk Aplikasi Perpus (Supabase PostgreSQL)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profile {
+  id    String @id @db.Uuid
+  name  String
+  email String
+  role  String @default("user")
+  loans Loan[]
+
+  @@map("profiles")
+}
+
+model Book {
+  id       BigInt  @id @default(autoincrement())
+  title    String
+  author   String
+  category String
+  stock    Int     @default(1)
+  cover    String?
+  loans    Loan[]
+
+  @@map("books")
+}
+
+model Loan {
+  id          BigInt    @id @default(autoincrement())
+  user_id     String    @db.Uuid
+  book_id     BigInt
+  status      String    @default("dipinjam")
+  created_at  DateTime  @default(now()) @db.Timestamptz
+  due_date    DateTime  @db.Timestamptz
+  returned_at DateTime? @db.Timestamptz
+
+  user Profile @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  book Book    @relation(fields: [book_id], references: [id], onDelete: Restrict)
+
+  @@map("loans")
+}
