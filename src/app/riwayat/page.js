@@ -8,27 +8,32 @@ import { getLoans, getBookById, returnBookData, getSession } from '@/lib/storage
 import { formatDate } from '@/lib/utils'
 import { History, BookOpen, RotateCcw } from 'lucide-react'
 
+function getUserLoans(currentSession) {
+  if (!currentSession) return []
+  const allLoans = getLoans()
+  return allLoans
+    .filter((l) => l.user_id === currentSession.id)
+    .map((l) => ({
+      ...l,
+      book: getBookById(l.book_id),
+    }))
+}
+
 export default function RiwayatPage() {
-  const [loans, setLoans] = useState([])
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState(() => {
+    if (typeof window === 'undefined') return null
+    return getSession()
+  })
+  const [loans, setLoans] = useState(() => {
+    if (typeof window === 'undefined') return []
+    const s = getSession()
+    return getUserLoans(s)
+  })
 
   const loadData = () => {
     const currentSession = getSession()
     setUser(currentSession)
-
-    if (currentSession) {
-      const allLoans = getLoans()
-      // Filter loans milik user sendiri
-      const userLoans = allLoans
-        .filter((l) => l.user_id === currentSession.id)
-        .map((l) => ({
-          ...l,
-          book: getBookById(l.book_id),
-        }))
-      setLoans(userLoans)
-    }
-    setLoading(false)
+    setLoans(getUserLoans(currentSession))
   }
 
   useEffect(() => {
@@ -48,14 +53,6 @@ export default function RiwayatPage() {
   }
 
   const activeLoansCount = loans.filter((l) => l.status === 'dipinjam').length
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-slate-500 text-sm">Memuat data riwayat...</p>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">

@@ -6,25 +6,19 @@ import CatalogView from '@/components/CatalogView'
 import { getBooks, getSession } from '@/lib/storage'
 
 export default function HomePage() {
-  const [books, setBooks] = useState([])
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [books, setBooks] = useState(() => {
+    if (typeof window === 'undefined') return []
+    return getBooks()
+  })
+  const [profile, setProfile] = useState(() => {
+    if (typeof window === 'undefined') return null
+    return getSession()
+  })
 
   useEffect(() => {
-    const b = getBooks()
-    const s = getSession()
-    setBooks(b)
-    setProfile(s)
-    setLoading(false)
+    setBooks(getBooks())
+    setProfile(getSession())
   }, [])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-slate-500 text-sm">Memuat katalog buku...</p>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">

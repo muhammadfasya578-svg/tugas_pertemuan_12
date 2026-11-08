@@ -14,64 +14,76 @@ import {
   RotateCcw,
 } from 'lucide-react'
 
+function getDashboardMetrics() {
+  const books = getBooks()
+  const users = getUsers()
+  const loans = getLoans()
+  const now = Date.now()
+
+  const activeLoans = loans.filter((l) => l.status === 'dipinjam')
+  const overdueLoans = activeLoans.filter(
+    (l) => l.due_date && new Date(l.due_date).getTime() < now
+  )
+
+  const stats = [
+    {
+      label: 'Total Buku',
+      value: books.length,
+      icon: BookOpen,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50',
+    },
+    {
+      label: 'Total Pengguna',
+      value: users.length,
+      icon: Users,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50',
+    },
+    {
+      label: 'Peminjaman Aktif',
+      value: activeLoans.length,
+      icon: Clock,
+      color: 'text-amber-600',
+      bg: 'bg-amber-50',
+    },
+    {
+      label: 'Peminjaman Terlambat',
+      value: overdueLoans.length,
+      icon: AlertTriangle,
+      color: 'text-red-600',
+      bg: 'bg-red-50',
+    },
+  ]
+
+  const recent = loans.slice(0, 5).map((l) => {
+    const u = users.find((usr) => usr.id === l.user_id)
+    const b = getBookById(l.book_id)
+    return {
+      ...l,
+      userName: u?.name || 'User',
+      userEmail: u?.email || '-',
+      bookTitle: b?.title || 'Buku dihapus',
+    }
+  })
+
+  return { stats, recent }
+}
+
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState([])
-  const [recentLoans, setRecentLoans] = useState([])
+  const [stats, setStats] = useState(() => {
+    if (typeof window === 'undefined') return []
+    return getDashboardMetrics().stats
+  })
+  const [recentLoans, setRecentLoans] = useState(() => {
+    if (typeof window === 'undefined') return []
+    return getDashboardMetrics().recent
+  })
 
   const loadDashboardData = () => {
-    const books = getBooks()
-    const users = getUsers()
-    const loans = getLoans()
-    const now = Date.now()
-
-    const activeLoans = loans.filter((l) => l.status === 'dipinjam')
-    const overdueLoans = activeLoans.filter(
-      (l) => l.due_date && new Date(l.due_date).getTime() < now
-    )
-
-    setStats([
-      {
-        label: 'Total Buku',
-        value: books.length,
-        icon: BookOpen,
-        color: 'text-emerald-600',
-        bg: 'bg-emerald-50',
-      },
-      {
-        label: 'Total Pengguna',
-        value: users.length,
-        icon: Users,
-        color: 'text-blue-600',
-        bg: 'bg-blue-50',
-      },
-      {
-        label: 'Peminjaman Aktif',
-        value: activeLoans.length,
-        icon: Clock,
-        color: 'text-amber-600',
-        bg: 'bg-amber-50',
-      },
-      {
-        label: 'Peminjaman Terlambat',
-        value: overdueLoans.length,
-        icon: AlertTriangle,
-        color: 'text-red-600',
-        bg: 'bg-red-50',
-      },
-    ])
-
-    // 5 peminjaman terakhir
-    const populated = loans.slice(0, 5).map((l) => {
-      const u = users.find((usr) => usr.id === l.user_id)
-      const b = getBookById(l.book_id)
-      return {
-        ...l,
-        userName: u?.name || 'User',
-        userEmail: u?.email || '-',
-        bookTitle: b?.title || 'Buku dihapus',
-      }
-    })
-    setRecentLoans(populated)
+    const data = getDashboardMetrics()
+    setStats(data.stats)
+    setRecentLoans(data.recent)
   }
 
   useEffect(() => {

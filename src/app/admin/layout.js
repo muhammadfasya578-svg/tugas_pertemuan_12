@@ -6,8 +6,15 @@ import AdminSidebar from '@/components/AdminSidebar'
 import { getSession } from '@/lib/storage'
 
 export default function AdminLayout({ children }) {
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState(() => {
+    if (typeof window === 'undefined') return null
+    return getSession()
+  })
+  const [loading, setLoading] = useState(() => {
+    if (typeof window === 'undefined') return true
+    const s = getSession()
+    return !s || s.role !== 'admin'
+  })
   const router = useRouter()
 
   useEffect(() => {
