@@ -4,36 +4,35 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import StatusBadge from '@/components/StatusBadge'
-import { getLoans, getBookById, returnBookData, getSession } from '@/lib/storage'
+import {
+  fetchLoans,
+  returnBookData,
+  getSession,
+  syncSessionFromSupabase,
+} from '@/lib/storage'
 import { formatDate } from '@/lib/utils'
-import { History, BookOpen, RotateCcw } from 'lucide-react'
-
-function getUserLoans(currentSession) {
-  if (!currentSession) return []
-  const allLoans = getLoans()
-  return allLoans
-    .filter((l) => l.user_id === currentSession.id)
-    .map((l) => ({
-      ...l,
-      book: getBookById(l.book_id),
-    }))
-}
+import { History, BookOpen, RotateCcw, Loader2 } from 'lucide-react'
 
 export default function RiwayatPage() {
   const [user, setUser] = useState(() => {
     if (typeof window === 'undefined') return null
     return getSession()
   })
-  const [loans, setLoans] = useState(() => {
-    if (typeof window === 'undefined') return []
-    const s = getSession()
-    return getUserLoans(s)
-  })
+  const [loans, setLoans] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  const loadData = () => {
-    const currentSession = getSession()
+  const loadData = async () => {
+    setLoading(true)
+    const currentSession = await syncSessionFromSupabase()
     setUser(currentSession)
-    setLoans(getUserLoans(currentSession))
+
+    if (currentSession) {
+      const userLoans = await fetchLoans(currentSession.id)
+      setLoans(userLoans)
+    } else {
+      setLoans([])
+    }
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -45,10 +44,10 @@ export default function RiwayatPage() {
     if (!confirmed) return
 
     const res = await returnBookData(loanId, user)
-    if (res.error) {
+    if (res?.error) {
       alert(res.error)
     } else {
-      loadData()
+      await loadData()
     }
   }
 
@@ -79,7 +78,12 @@ export default function RiwayatPage() {
           </div>
         </div>
 
-        {loans.length > 0 ? (
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-500 bg-white rounded-2xl border border-slate-200">
+            <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mb-3" />
+            <p className="text-sm">Memuat riwayat peminjaman dari Supabase...</p>
+          </div>
+        ) : loans.length > 0 ? (
           /* Tabel Riwayat */
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
@@ -99,10 +103,10 @@ export default function RiwayatPage() {
                     <tr key={loan.id} className="hover:bg-emerald-50/40 transition">
                       <td className="px-6 py-4">
                         <div className="font-semibold text-slate-900">
-                          {loan.book?.title || 'Buku tidak ditemukan'}
+                          {loan.bookTitle || loan.book?.title || 'Buku tidak ditemukan'}
                         </div>
                         <div className="text-xs text-slate-500">
-                          {loan.book?.author} &bull; {loan.book?.category}
+                          {loan.bookCategory || loan.book?.category || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-slate-600">
@@ -126,7 +130,7 @@ export default function RiwayatPage() {
                           <button
                             type="button"
                             onClick={() => handleReturn(loan.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 transition"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 transition cursor-pointer"
                           >
                             <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                             <span>Kembalikan</span>

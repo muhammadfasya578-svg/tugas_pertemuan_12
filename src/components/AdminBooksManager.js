@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import {
+  fetchBooks,
   getBooks,
   addBook,
   updateBookData,
@@ -15,10 +16,12 @@ import {
   Search,
   BookOpen,
   AlertCircle,
+  Loader2,
 } from 'lucide-react'
 
 export default function AdminBooksManager() {
   const [books, setBooks] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState('add') // 'add' | 'edit'
@@ -30,9 +33,13 @@ export default function AdminBooksManager() {
   const [category, setCategory] = useState('')
   const [stock, setStock] = useState('1')
   const [errorMsg, setErrorMsg] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  const loadBooks = () => {
-    setBooks(getBooks())
+  const loadBooks = async () => {
+    setLoading(true)
+    const data = await fetchBooks()
+    setBooks(data)
+    setLoading(false)
   }
 
   useEffect(() => {
@@ -80,6 +87,7 @@ export default function AdminBooksManager() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMsg('')
+    setSaving(true)
 
     let res
     if (modalMode === 'add') {
@@ -87,6 +95,7 @@ export default function AdminBooksManager() {
     } else {
       res = await updateBookData(selectedBook.id, { title, author, category, stock })
     }
+    setSaving(false)
 
     if (res?.error) {
       setErrorMsg(res.error)

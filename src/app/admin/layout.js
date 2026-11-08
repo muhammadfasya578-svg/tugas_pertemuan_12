@@ -3,34 +3,42 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import AdminSidebar from '@/components/AdminSidebar'
-import { getSession } from '@/lib/storage'
+import { getSession, syncSessionFromSupabase } from '@/lib/storage'
 
 export default function AdminLayout({ children }) {
   const [profile, setProfile] = useState(() => {
     if (typeof window === 'undefined') return null
     return getSession()
   })
-  const [loading, setLoading] = useState(() => {
-    if (typeof window === 'undefined') return true
-    const s = getSession()
-    return !s || s.role !== 'admin'
-  })
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
-    const s = getSession()
-    if (!s || s.role !== 'admin') {
-      router.push('/')
-      return
+    let isMounted = true
+
+    async function checkAdmin() {
+      const s = await syncSessionFromSupabase()
+      if (!isMounted) return
+
+      if (!s || s.role !== 'admin') {
+        router.push('/')
+        return
+      }
+      setProfile(s)
+      setLoading(false)
     }
-    setProfile(s)
-    setLoading(false)
+
+    checkAdmin()
+
+    return () => {
+      isMounted = false
+    }
   }, [router])
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <p className="text-slate-500 text-sm">Memeriksa hak akses admin...</p>
+        <p className="text-slate-500 text-sm">Memeriksa hak akses admin dari Supabase...</p>
       </div>
     )
   }

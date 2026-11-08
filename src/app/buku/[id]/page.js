@@ -5,7 +5,13 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import Navbar from '@/components/Navbar'
-import { getBookById, getLoans, borrowBookData, getSession } from '@/lib/storage'
+import {
+  fetchBookById,
+  fetchLoans,
+  borrowBookData,
+  getSession,
+  syncSessionFromSupabase,
+} from '@/lib/storage'
 import {
   BookOpen,
   ArrowLeft,
@@ -25,26 +31,42 @@ function BookDetailContent() {
   const [user, setUser] = useState(null)
   const [isAlreadyBorrowed, setIsAlreadyBorrowed] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
   useEffect(() => {
     if (!id) return
-    const currentSession = getSession()
-    setUser(currentSession)
+    let isMounted = true
 
-    const b = getBookById(id)
-    setBook(b)
+    async function loadData() {
+      setInitialLoading(true)
+      const currentSession = await syncSessionFromSupabase()
+      setUser(currentSession)
 
-    if (currentSession) {
-      const loans = getLoans()
-      const active = loans.some(
-        (l) =>
-          l.user_id === currentSession.id &&
-          Number(l.book_id) === Number(id) &&
-          l.status === 'dipinjam'
-      )
-      setIsAlreadyBorrowed(active)
+      const [b, loans] = await Promise.all([
+        fetchBookById(id),
+        currentSession ? fetchLoans(currentSession.id) : Promise.resolve([]),
+      ])
+
+      if (isMounted) {
+        setBook(b)
+        if (currentSession && loans) {
+          const active = loans.some(
+            (l) =>
+              Number(l.book_id) === Number(id) &&
+              l.status === 'dipinjam'
+          )
+          setIsAlreadyBorrowed(active)
+        }
+        setInitialLoading(false)
+      }
+    }
+
+    loadData()
+
+    return () => {
+      isMounted = false
     }
   }, [id])
 
@@ -61,8 +83,20 @@ function BookDetailContent() {
     } else {
       setSuccessMsg('Buku berhasil dipinjam! Silakan cek di menu Riwayat.')
       setIsAlreadyBorrowed(true)
-      setBook(getBookById(id))
+      const updated = await fetchBookById(id)
+      setBook(updated)
     }
+  }
+
+  if (initialLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="text-center flex flex-col items-center">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mb-3" />
+          <p className="text-slate-500 text-sm">Memuat informasi buku dari Supabase...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!book) {
@@ -190,7 +224,7 @@ function BookDetailContent() {
                     type="button"
                     onClick={handleBorrow}
                     disabled={isOutOfStock || loading}
-                    className="w-full sm:w-auto px-8 h-12 rounded-xl bg-emerald-700 text-white font-medium text-sm hover:bg-emerald-800 active:bg-emerald-900 disabled:opacity-50 transition flex items-center justify-center gap-2 shadow-xs"
+                    className="w-full sm:w-auto px-8 h-12 rounded-xl bg-emerald-700 text-white font-medium text-sm hover:bg-emerald-800 active:bg-emerald-900 disabled:opacity-50 transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                   >
                     {loading ? (
                       <>

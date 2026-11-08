@@ -1,36 +1,28 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getLoans, getBookById, getUsers, returnBookData, getSession } from '@/lib/storage'
+import { fetchLoans, returnBookData, getSession, syncSessionFromSupabase } from '@/lib/storage'
 import StatusBadge from '@/components/StatusBadge'
 import { formatDate } from '@/lib/utils'
-import { Search, RotateCcw } from 'lucide-react'
+import { Search, RotateCcw, Loader2 } from 'lucide-react'
 
 export default function AdminLoansManager() {
   const [loans, setLoans] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('semua')
   const [currentUser, setCurrentUser] = useState(null)
 
-  const loadLoans = () => {
-    const allLoans = getLoans()
-    const allUsers = getUsers()
-    const populated = allLoans.map((l) => {
-      const u = allUsers.find((usr) => usr.id === l.user_id)
-      const b = getBookById(l.book_id)
-      return {
-        ...l,
-        userName: u?.name || 'User',
-        userEmail: u?.email || '-',
-        bookTitle: b?.title || 'Buku dihapus',
-        bookCategory: b?.category || '-',
-      }
-    })
-    setLoans(populated)
+  const loadLoans = async () => {
+    setLoading(true)
+    const userSession = await syncSessionFromSupabase()
+    setCurrentUser(userSession)
+    const data = await fetchLoans()
+    setLoans(data)
+    setLoading(false)
   }
 
   useEffect(() => {
-    setCurrentUser(getSession())
     loadLoans()
   }, [])
 

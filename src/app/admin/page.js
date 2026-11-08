@@ -4,155 +4,119 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
 import { formatDate } from '@/lib/utils'
-import { getBooks, getUsers, getLoans, getBookById, resetToDefaultSeed } from '@/lib/storage'
+import { fetchDashboardMetrics } from '@/lib/storage'
 import {
   BookOpen,
   Users,
   Clock,
   AlertTriangle,
   LayoutDashboard,
-  RotateCcw,
+  RefreshCw,
+  Database,
+  Loader2,
 } from 'lucide-react'
 
-function getDashboardMetrics() {
-  const books = getBooks()
-  const users = getUsers()
-  const loans = getLoans()
-  const now = Date.now()
-
-  const activeLoans = loans.filter((l) => l.status === 'dipinjam')
-  const overdueLoans = activeLoans.filter(
-    (l) => l.due_date && new Date(l.due_date).getTime() < now
-  )
-
-  const stats = [
-    {
-      label: 'Total Buku',
-      value: books.length,
-      icon: BookOpen,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
-    },
-    {
-      label: 'Total Pengguna',
-      value: users.length,
-      icon: Users,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
-    },
-    {
-      label: 'Peminjaman Aktif',
-      value: activeLoans.length,
-      icon: Clock,
-      color: 'text-amber-600',
-      bg: 'bg-amber-50',
-    },
-    {
-      label: 'Peminjaman Terlambat',
-      value: overdueLoans.length,
-      icon: AlertTriangle,
-      color: 'text-red-600',
-      bg: 'bg-red-50',
-    },
-  ]
-
-  const recent = loans.slice(0, 5).map((l) => {
-    const u = users.find((usr) => usr.id === l.user_id)
-    const b = getBookById(l.book_id)
-    return {
-      ...l,
-      userName: u?.name || 'User',
-      userEmail: u?.email || '-',
-      bookTitle: b?.title || 'Buku dihapus',
-    }
-  })
-
-  return { stats, recent }
+const ICON_MAP = {
+  BookOpen,
+  Users,
+  Clock,
+  AlertTriangle,
 }
 
 export default function AdminDashboardPage() {
-  const [stats, setStats] = useState(() => {
-    if (typeof window === 'undefined') return []
-    return getDashboardMetrics().stats
-  })
-  const [recentLoans, setRecentLoans] = useState(() => {
-    if (typeof window === 'undefined') return []
-    return getDashboardMetrics().recent
-  })
+  const [stats, setStats] = useState([])
+  const [recentLoans, setRecentLoans] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [isLive, setIsLive] = useState(false)
 
-  const loadDashboardData = () => {
-    const data = getDashboardMetrics()
-    setStats(data.stats)
-    setRecentLoans(data.recent)
+  const loadData = async () => {
+    setRefreshing(true)
+    const data = await fetchDashboardMetrics()
+    setStats(data.stats || [])
+    setRecentLoans(data.recent || [])
+    setIsLive(data.isLive)
+    setRefreshing(false)
+    setLoading(false)
   }
 
   useEffect(() => {
-    loadDashboardData()
+    loadData()
   }, [])
-
-  const handleResetSeed = () => {
-    const confirmed = window.confirm(
-      'Apakah kamu yakin ingin mereset seluruh data ke seeder awal bawaan (8 buku, 4 akun pengguna, dan data peminjaman default)?'
-    )
-    if (!confirmed) return
-
-    resetToDefaultSeed()
-    loadDashboardData()
-    alert('Data berhasil di-reset ke data seeder bawaan!')
-  }
 
   return (
     <div className="space-y-8">
-      {/* Header & Seeder Reset Button */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
-            <LayoutDashboard className="w-6 h-6 text-emerald-700" aria-hidden="true" />
-            <span>Dashboard Ringkasan</span>
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
+              <LayoutDashboard className="w-6 h-6 text-emerald-700" aria-hidden="true" />
+              <span>Dashboard Ringkasan</span>
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <Database className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+              <span>Supabase Live</span>
+            </span>
+          </div>
           <p className="text-slate-600 text-sm mt-1">
-            Pantau metrik perpustakaan, aktivitas peminjaman, dan status koleksi buku.
+            Pantau metrik langsung dari database Supabase PostgreSQL secara real-time.
           </p>
         </div>
 
         <button
           type="button"
-          onClick={handleResetSeed}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition self-start sm:self-auto"
-          title="Reset semua data ke seeder awal"
-          aria-label="Reset semua data ke seeder awal bawaan"
+          onClick={loadData}
+          disabled={refreshing}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition self-start sm:self-auto cursor-pointer disabled:opacity-50"
+          title="Sinkronkan data dengan Supabase"
+          aria-label="Segarkan data dari Supabase"
         >
-          <RotateCcw className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
-          <span>Reset ke Data Seeder</span>
+          <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+          <span>{refreshing ? 'Menyinkronkan...' : 'Segarkan Data'}</span>
         </button>
       </div>
 
       {/* 4 StatCards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {stats.map((stat, i) => {
-          const Icon = stat.icon
-          return (
-            <div
-              key={i}
-              className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex items-center gap-4"
-            >
-              <div
-                className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center flex-shrink-0`}
-              >
-                <Icon className="w-7 h-7" aria-hidden="true" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-slate-600 uppercase tracking-wider">
-                  {stat.label}
-                </p>
-                <p className="text-2xl font-bold text-slate-900 mt-0.5">
-                  {stat.value}
-                </p>
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs animate-pulse flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-slate-100" />
+              <div className="space-y-2 flex-1">
+                <div className="h-3 bg-slate-100 rounded-sm w-20" />
+                <div className="h-6 bg-slate-100 rounded-sm w-12" />
               </div>
             </div>
-          )
-        })}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {stats.map((stat, i) => {
+            const Icon = ICON_MAP[stat.iconName] || BookOpen
+            return (
+              <div
+                key={i}
+                className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex items-center gap-4"
+              >
+                <div
+                  className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center flex-shrink-0`}
+                >
+                  <Icon className="w-7 h-7" aria-hidden="true" />
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-slate-600 uppercase tracking-wider">
+                    {stat.label}
+                  </p>
+                  <p className="text-2xl font-bold text-slate-900 mt-0.5">
+                    {stat.value}
+                  </p>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Recent Loans Section */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
@@ -162,7 +126,7 @@ export default function AdminDashboardPage() {
               Peminjaman Terbaru
             </h2>
             <p className="text-xs text-slate-600 mt-0.5">
-              5 transaksi peminjaman buku terakhir
+              5 transaksi peminjaman buku terakhir dari Supabase
             </p>
           </div>
           <Link
@@ -173,7 +137,12 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        {recentLoans.length > 0 ? (
+        {loading ? (
+          <div className="p-8 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+            <span>Memuat peminjaman terbaru...</span>
+          </div>
+        ) : recentLoans.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm text-slate-700">
               <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
@@ -221,7 +190,7 @@ export default function AdminDashboardPage() {
           </div>
         ) : (
           <div className="p-8 text-center text-sm text-slate-600">
-            Belum ada aktivitas peminjaman.
+            Belum ada aktivitas peminjaman di Supabase.
           </div>
         )}
       </div>

@@ -1,4 +1,3 @@
-// Adapter Database Supabase & LocalStorage untuk Aplikasi Perpus
 import { createClient } from '@/lib/supabase/client'
 
 let supabaseInstance = null
@@ -33,51 +32,19 @@ export const INITIAL_USERS = [
   { id: 'usr-4', name: 'Ahmad Fauzi', email: 'user@perpus.com', password: 'userpassword123', role: 'user' },
 ]
 
-export const INITIAL_LOANS = [
-  {
-    id: 1,
-    user_id: 'usr-4',
-    book_id: 1,
-    status: 'dipinjam',
-    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    returned_at: null,
-  },
-  {
-    id: 2,
-    user_id: 'usr-4',
-    book_id: 3,
-    status: 'dipinjam',
-    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    due_date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    returned_at: null,
-  },
-]
+export const INITIAL_LOANS = []
 
-// Inisialisasi dan sinkronisasi cache lokal
 export function initLocalStorage() {
   if (typeof window === 'undefined') return
-  if (!localStorage.getItem('perpus_books')) {
-    localStorage.setItem('perpus_books', JSON.stringify(INITIAL_BOOKS))
-  }
-  if (!localStorage.getItem('perpus_users')) {
-    localStorage.setItem('perpus_users', JSON.stringify(INITIAL_USERS))
-  }
-  if (!localStorage.getItem('perpus_loans')) {
-    localStorage.setItem('perpus_loans', JSON.stringify(INITIAL_LOANS))
-  }
 }
 
-// Reset data lokal jika diperlukan
 export function resetToDefaultSeed() {
   if (typeof window === 'undefined') return
-  localStorage.setItem('perpus_books', JSON.stringify(INITIAL_BOOKS))
-  localStorage.setItem('perpus_users', JSON.stringify(INITIAL_USERS))
-  localStorage.setItem('perpus_loans', JSON.stringify(INITIAL_LOANS))
+  localStorage.removeItem('perpus_books')
+  localStorage.removeItem('perpus_loans')
   return true
 }
 
-// Sesi dan Cookie
 export function getSession() {
   if (typeof window === 'undefined') return null
   const sessionStr = localStorage.getItem('perpus_session')
@@ -107,56 +74,83 @@ export function clearSession() {
   document.cookie = 'perpus_session=; path=/; max-age=0'
 }
 
-// Autentikasi Pengguna
+export async function syncSessionFromSupabase() {
+  const supabase = getSupabase()
+  if (!supabase) return getSession()
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      clearSession()
+      return null
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const sessionUser = {
+      id: user.id,
+      email: user.email,
+      name: profile?.name || user.user_metadata?.name || user.email.split('@')[0],
+      role: profile?.role || 'user',
+    }
+    setSession(sessionUser)
+    return sessionUser
+  } catch {
+    return getSession()
+  }
+}
+
 export async function loginUser(email, password) {
   const supabase = getSupabase()
   const trimmedEmail = email.toLowerCase().trim()
 
-  if (supabase) {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: trimmedEmail,
-        password,
-      })
+  if (!supabase) {
+    return { error: 'Konfigurasi Supabase tidak ditemukan' }
+  }
 
-      if (!error && data?.user) {
-        // Ambil profil dari database Supabase
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single()
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: trimmedEmail,
+      password,
+    })
 
-        const sessionUser = {
-          id: data.user.id,
-          email: data.user.email,
-          name: profile?.name || data.user.user_metadata?.name || trimmedEmail.split('@')[0],
-          role: profile?.role || 'user',
-        }
-        setSession(sessionUser)
-        return { user: sessionUser }
+    if (error) {
+      if (error.code === 'invalid_credentials' || error.message.includes('Invalid login credentials')) {
+        return { error: 'Email atau password salah' }
       }
-    } catch {}
+      if (error.code === 'email_not_confirmed' || error.message.includes('Email not confirmed')) {
+        return {
+          error: 'Email belum dikonfirmasi di Supabase. Silakan jalankan script SQL supabase_setup.sql di dashboard Supabase.',
+        }
+      }
+      return { error: error.message }
+    }
+
+    if (data?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .maybeSingle()
+
+      const sessionUser = {
+        id: data.user.id,
+        email: data.user.email,
+        name: profile?.name || data.user.user_metadata?.name || trimmedEmail.split('@')[0],
+        role: profile?.role || 'user',
+      }
+      setSession(sessionUser)
+      return { user: sessionUser }
+    }
+  } catch (err) {
+    return { error: err.message || 'Gagal terhubung ke Supabase' }
   }
 
-  // Fallback akun lokal
-  initLocalStorage()
-  const users = getUsers()
-  const user = users.find(
-    (u) => u.email.toLowerCase() === trimmedEmail && u.password === password
-  )
-  if (!user) {
-    return { error: 'Email atau password salah' }
-  }
-
-  const sessionUser = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-  }
-  setSession(sessionUser)
-  return { user: sessionUser }
+  return { error: 'Gagal melakukan login' }
 }
 
 export async function registerUser(name, email, password) {
@@ -164,90 +158,98 @@ export async function registerUser(name, email, password) {
   const trimmedEmail = email.toLowerCase().trim()
   const trimmedName = name.trim()
 
+  if (!supabase) {
+    return { error: 'Konfigurasi Supabase tidak ditemukan' }
+  }
+
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: trimmedEmail,
+      password,
+      options: {
+        data: { name: trimmedName },
+      },
+    })
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    if (data?.user) {
+      const sessionUser = {
+        id: data.user.id,
+        email: trimmedEmail,
+        name: trimmedName,
+        role: 'user',
+      }
+      setSession(sessionUser)
+      return { user: sessionUser }
+    }
+  } catch (e) {
+    return { error: e.message }
+  }
+
+  return { error: 'Gagal mendaftar' }
+}
+
+export async function fetchBooks() {
+  const supabase = getSupabase()
   if (supabase) {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: trimmedEmail,
-        password,
-        options: {
-          data: { name: trimmedName },
-        },
-      })
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .order('id', { ascending: true })
 
-      if (error) {
-        return { error: error.message }
-      }
-
-      if (data?.user) {
-        const sessionUser = {
-          id: data.user.id,
-          email: trimmedEmail,
-          name: trimmedName,
-          role: 'user',
+      if (!error && data && data.length > 0) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('perpus_books', JSON.stringify(data))
         }
-        setSession(sessionUser)
-        return { user: sessionUser }
+        return data
       }
-    } catch (e) {
-      return { error: e.message }
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    const cached = localStorage.getItem('perpus_books')
+    if (cached) {
+      try {
+        return JSON.parse(cached)
+      } catch {}
     }
   }
 
-  // Fallback lokal
-  initLocalStorage()
-  const users = getUsers()
-  if (users.some((u) => u.email.toLowerCase() === trimmedEmail)) {
-    return { error: 'Email sudah terdaftar' }
-  }
-
-  const newUser = {
-    id: `usr-${Date.now()}`,
-    name: trimmedName,
-    email: trimmedEmail,
-    password,
-    role: 'user',
-  }
-  users.push(newUser)
-  localStorage.setItem('perpus_users', JSON.stringify(users))
-
-  const sessionUser = {
-    id: newUser.id,
-    name: newUser.name,
-    email: newUser.email,
-    role: newUser.role,
-  }
-  setSession(sessionUser)
-  return { user: sessionUser }
+  return INITIAL_BOOKS
 }
 
-// Operasi Pengguna
-export function getUsers() {
-  if (typeof window === 'undefined') return INITIAL_USERS
-  const data = localStorage.getItem('perpus_users')
-  return data ? JSON.parse(data) : INITIAL_USERS
-}
-
-// Operasi Buku
 export function getBooks() {
-  if (typeof window === 'undefined') return INITIAL_BOOKS
-  initLocalStorage()
-  const data = localStorage.getItem('perpus_books')
-  return data ? JSON.parse(data) : INITIAL_BOOKS
+  if (typeof window !== 'undefined') {
+    const cached = localStorage.getItem('perpus_books')
+    if (cached) {
+      try {
+        return JSON.parse(cached)
+      } catch {}
+    }
+  }
+  return INITIAL_BOOKS
 }
 
-export async function fetchBooksFromSupabase() {
+export async function fetchBookById(id) {
   const supabase = getSupabase()
-  if (!supabase) return getBooks()
-  try {
-    const { data, error } = await supabase.from('books').select('*').order('id')
-    if (!error && data && data.length > 0) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('perpus_books', JSON.stringify(data))
-      }
-      return data
-    }
-  } catch {}
-  return getBooks()
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('id', Number(id))
+        .single()
+
+      if (!error && data) return data
+    } catch {}
+  }
+
+  const books = await fetchBooks()
+  return books.find((b) => Number(b.id) === Number(id)) || null
 }
 
 export function getBookById(id) {
@@ -257,230 +259,254 @@ export function getBookById(id) {
 
 export async function addBook({ title, author, category, stock, cover }) {
   const supabase = getSupabase()
+  if (!supabase) return { error: 'Koneksi Supabase tidak aktif' }
+
   const cleanCover = cover || '/covers/default-book.svg'
   const parsedStock = parseInt(stock, 10) || 0
 
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('books')
-        .insert({
-          title: title.trim(),
-          author: author.trim(),
-          category: category.trim(),
-          stock: parsedStock,
-          cover: cleanCover,
-        })
-        .select()
-        .single()
+  const { data, error } = await supabase
+    .from('books')
+    .insert({
+      title: title.trim(),
+      author: author.trim(),
+      category: category.trim(),
+      stock: parsedStock,
+      cover: cleanCover,
+    })
+    .select()
+    .single()
 
-      if (!error && data) {
-        const books = getBooks()
-        books.push(data)
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('perpus_books', JSON.stringify(books))
-        }
-        return { success: true, book: data }
-      }
-    } catch {}
+  if (error) {
+    return { error: error.message }
   }
 
-  const books = getBooks()
-  const newBook = {
-    id: Date.now(),
-    title: title.trim(),
-    author: author.trim(),
-    category: category.trim(),
-    stock: parsedStock,
-    cover: cleanCover,
-  }
-  books.push(newBook)
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('perpus_books', JSON.stringify(books))
-  }
-  return { success: true, book: newBook }
+  await fetchBooks()
+  return { success: true, book: data }
 }
 
 export async function updateBookData(id, { title, author, category, stock, cover }) {
   const supabase = getSupabase()
+  if (!supabase) return { error: 'Koneksi Supabase tidak aktif' }
+
   const parsedStock = parseInt(stock, 10) || 0
 
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('books')
-        .update({
-          title: title.trim(),
-          author: author.trim(),
-          category: category.trim(),
-          stock: parsedStock,
-          cover,
-        })
-        .eq('id', id)
-        .select()
-        .single()
+  const { data, error } = await supabase
+    .from('books')
+    .update({
+      title: title.trim(),
+      author: author.trim(),
+      category: category.trim(),
+      stock: parsedStock,
+      cover,
+    })
+    .eq('id', Number(id))
+    .select()
+    .single()
 
-      if (!error && data) {
-        const books = getBooks()
-        const idx = books.findIndex((b) => Number(b.id) === Number(id))
-        if (idx !== -1) books[idx] = data
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('perpus_books', JSON.stringify(books))
-        }
-        return { success: true, book: data }
-      }
-    } catch {}
+  if (error) {
+    return { error: error.message }
   }
 
-  const books = getBooks()
-  const index = books.findIndex((b) => Number(b.id) === Number(id))
-  if (index === -1) return { error: 'Buku tidak ditemukan' }
-
-  books[index] = {
-    ...books[index],
-    title: title.trim(),
-    author: author.trim(),
-    category: category.trim(),
-    stock: parsedStock,
-    cover: cover || books[index].cover || '/covers/default-book.svg',
-  }
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('perpus_books', JSON.stringify(books))
-  }
-  return { success: true, book: books[index] }
+  await fetchBooks()
+  return { success: true, book: data }
 }
 
 export async function deleteBookData(id) {
   const supabase = getSupabase()
+  if (!supabase) return { error: 'Koneksi Supabase tidak aktif' }
 
-  // Cek peminjaman aktif
-  const loans = getLoans()
-  const activeLoans = loans.filter(
-    (l) => Number(l.book_id) === Number(id) && l.status === 'dipinjam'
-  )
-  if (activeLoans.length > 0) {
+  const { data: activeLoans, error: loanErr } = await supabase
+    .from('loans')
+    .select('id')
+    .eq('book_id', Number(id))
+    .eq('status', 'dipinjam')
+
+  if (!loanErr && activeLoans && activeLoans.length > 0) {
     return {
       error: `Buku tidak dapat dihapus karena masih memiliki ${activeLoans.length} peminjaman aktif.`,
     }
   }
 
+  const { error } = await supabase.from('books').delete().eq('id', Number(id))
+  if (error) {
+    return { error: error.message }
+  }
+
+  await fetchBooks()
+  return { success: true }
+}
+
+export async function fetchLoans(userId = null) {
+  const supabase = getSupabase()
   if (supabase) {
     try {
-      const { error } = await supabase.from('books').delete().eq('id', id)
-      if (error) {
-        return { error: error.message }
+      let query = supabase
+        .from('loans')
+        .select('*, book:books(*), user:profiles(*)')
+        .order('created_at', { ascending: false })
+
+      if (userId) {
+        query = query.eq('user_id', userId)
+      }
+
+      const { data, error } = await query
+      if (!error && data) {
+        return data.map((l) => ({
+          ...l,
+          userName: l.user?.name || 'User',
+          userEmail: l.user?.email || '-',
+          bookTitle: l.book?.title || 'Buku dihapus',
+          bookCategory: l.book?.category || '-',
+        }))
       }
     } catch {}
   }
 
-  let books = getBooks()
-  books = books.filter((b) => Number(b.id) !== Number(id))
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('perpus_books', JSON.stringify(books))
-  }
-  return { success: true }
+  return []
 }
 
-// Operasi Peminjaman
 export function getLoans() {
-  if (typeof window === 'undefined') return INITIAL_LOANS
-  initLocalStorage()
-  const data = localStorage.getItem('perpus_loans')
-  return data ? JSON.parse(data) : INITIAL_LOANS
+  if (typeof window !== 'undefined') {
+    const cached = localStorage.getItem('perpus_loans')
+    if (cached) {
+      try {
+        return JSON.parse(cached)
+      } catch {}
+    }
+  }
+  return INITIAL_LOANS
 }
 
 export async function borrowBookData(bookId, user) {
   if (!user) return { error: 'Harus login terlebih dahulu' }
 
   const supabase = getSupabase()
-  if (supabase) {
-    try {
-      const { error } = await supabase.rpc('borrow_book', {
-        p_book_id: Number(bookId),
-      })
-      if (error) {
-        return { error: error.message }
-      }
-      await fetchBooksFromSupabase()
-      return { success: true }
-    } catch (e) {
-      return { error: e.message }
+  if (!supabase) return { error: 'Koneksi Supabase tidak tersedia' }
+
+  try {
+    const { error } = await supabase.rpc('borrow_book', {
+      p_book_id: Number(bookId),
+    })
+
+    if (error) {
+      return { error: error.message }
     }
+
+    await fetchBooks()
+    return { success: true }
+  } catch (e) {
+    return { error: e.message }
   }
-
-  const loans = getLoans()
-  const userActiveLoans = loans.filter(
-    (l) => l.user_id === user.id && l.status === 'dipinjam'
-  )
-  if (userActiveLoans.length >= 3) {
-    return { error: 'Batas pinjam maksimal 3 buku aktif.' }
-  }
-
-  const alreadyBorrowed = loans.some(
-    (l) =>
-      l.user_id === user.id &&
-      Number(l.book_id) === Number(bookId) &&
-      l.status === 'dipinjam'
-  )
-  if (alreadyBorrowed) {
-    return { error: 'Buku ini sedang kamu pinjam.' }
-  }
-
-  const books = getBooks()
-  const bookIndex = books.findIndex((b) => Number(b.id) === Number(bookId))
-  if (bookIndex === -1) return { error: 'Buku tidak ditemukan' }
-  if (books[bookIndex].stock <= 0) return { error: 'Stok buku habis' }
-
-  books[bookIndex].stock -= 1
-  localStorage.setItem('perpus_books', JSON.stringify(books))
-
-  const newLoan = {
-    id: Date.now(),
-    user_id: user.id,
-    book_id: Number(bookId),
-    status: 'dipinjam',
-    created_at: new Date().toISOString(),
-    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    returned_at: null,
-  }
-  loans.unshift(newLoan)
-  localStorage.setItem('perpus_loans', JSON.stringify(loans))
-  return { success: true, loan: newLoan }
 }
 
 export async function returnBookData(loanId, user) {
   const supabase = getSupabase()
+  if (!supabase) return { error: 'Koneksi Supabase tidak tersedia' }
+
+  try {
+    const { error } = await supabase.rpc('return_book', {
+      p_loan_id: Number(loanId),
+    })
+
+    if (error) {
+      return { error: error.message }
+    }
+
+    await fetchBooks()
+    return { success: true }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+export async function fetchProfiles() {
+  const supabase = getSupabase()
   if (supabase) {
     try {
-      const { error } = await supabase.rpc('return_book', {
-        p_loan_id: Number(loanId),
-      })
-      if (error) {
-        return { error: error.message }
-      }
-      await fetchBooksFromSupabase()
-      return { success: true }
-    } catch (e) {
-      return { error: e.message }
+      const { data, error } = await supabase.from('profiles').select('*')
+      if (!error && data) return data
+    } catch {}
+  }
+  return []
+}
+
+export function getUsers() {
+  return []
+}
+
+export async function fetchDashboardMetrics() {
+  const supabase = getSupabase()
+  const now = Date.now()
+
+  if (supabase) {
+    try {
+      const [{ data: books }, { data: profiles }, { data: loans }] = await Promise.all([
+        supabase.from('books').select('*').order('id', { ascending: true }),
+        supabase.from('profiles').select('*'),
+        supabase.from('loans').select('*, book:books(*), user:profiles(*)').order('created_at', { ascending: false }),
+      ])
+
+      const safeBooks = books || []
+      const safeProfiles = profiles || []
+      const safeLoans = loans || []
+
+      const activeLoans = safeLoans.filter((l) => l.status === 'dipinjam')
+      const overdueLoans = activeLoans.filter(
+        (l) => l.due_date && new Date(l.due_date).getTime() < now
+      )
+
+      const stats = [
+        {
+          label: 'Total Buku',
+          value: safeBooks.length,
+          iconName: 'BookOpen',
+          color: 'text-emerald-600',
+          bg: 'bg-emerald-50',
+        },
+        {
+          label: 'Total Pengguna',
+          value: safeProfiles.length,
+          iconName: 'Users',
+          color: 'text-blue-600',
+          bg: 'bg-blue-50',
+        },
+        {
+          label: 'Peminjaman Aktif',
+          value: activeLoans.length,
+          iconName: 'Clock',
+          color: 'text-amber-600',
+          bg: 'bg-amber-50',
+        },
+        {
+          label: 'Peminjaman Terlambat',
+          value: overdueLoans.length,
+          iconName: 'AlertTriangle',
+          color: 'text-red-600',
+          bg: 'bg-red-50',
+        },
+      ]
+
+      const recent = safeLoans.slice(0, 5).map((l) => ({
+        ...l,
+        userName: l.user?.name || 'User',
+        userEmail: l.user?.email || '-',
+        bookTitle: l.book?.title || 'Buku dihapus',
+      }))
+
+      return { stats, recent, isLive: true }
+    } catch (err) {
+      console.error('fetchDashboardMetrics error:', err)
     }
   }
 
-  const loans = getLoans()
-  const loanIndex = loans.findIndex((l) => Number(l.id) === Number(loanId))
-  if (loanIndex === -1) return { error: 'Peminjaman tidak ditemukan' }
-
-  const loan = loans[loanIndex]
-  if (loan.status !== 'dipinjam') return { error: 'Buku sudah dikembalikan' }
-
-  loans[loanIndex].status = 'dikembalikan'
-  loans[loanIndex].returned_at = new Date().toISOString()
-  localStorage.setItem('perpus_loans', JSON.stringify(loans))
-
-  const books = getBooks()
-  const bookIndex = books.findIndex((b) => Number(b.id) === Number(loan.book_id))
-  if (bookIndex !== -1) {
-    books[bookIndex].stock += 1
-    localStorage.setItem('perpus_books', JSON.stringify(books))
+  return {
+    stats: [
+      { label: 'Total Buku', value: 0, iconName: 'BookOpen', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+      { label: 'Total Pengguna', value: 0, iconName: 'Users', color: 'text-blue-600', bg: 'bg-blue-50' },
+      { label: 'Peminjaman Aktif', value: 0, iconName: 'Clock', color: 'text-amber-600', bg: 'bg-amber-50' },
+      { label: 'Peminjaman Terlambat', value: 0, iconName: 'AlertTriangle', color: 'text-red-600', bg: 'bg-red-50' },
+    ],
+    recent: [],
+    isLive: false,
   }
-  return { success: true }
 }
