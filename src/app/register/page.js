@@ -250,7 +250,7 @@ export default function RegisterPage() {
 
               {/* Password Strength Indicator - Simple & Smooth */}
               {password.length > 0 && (
-                <div className="mt-2 space-y-2">
+                <div className="mt-5 space-y-4">
                   {/* Status & Persentase Baris */}
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500">Kekuatan password:</span>
