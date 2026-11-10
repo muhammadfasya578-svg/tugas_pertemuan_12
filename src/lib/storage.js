@@ -15,15 +15,34 @@ export function getSupabase() {
 }
 
 export const INITIAL_BOOKS = [
-  { id: 1, title: 'Laskar Pelangi', author: 'Andrea Hirata', category: 'Novel', stock: 3, cover: '/covers/laskar-pelangi.svg' },
-  { id: 2, title: 'Bumi Manusia', author: 'Pramoedya A. Toer', category: 'Novel', stock: 2, cover: '/covers/bumi-manusia.svg' },
-  { id: 3, title: 'Filosofi Teras', author: 'Henry Manampiring', category: 'Self-help', stock: 4, cover: '/covers/filosofi-teras.svg' },
-  { id: 4, title: 'Atomic Habits', author: 'James Clear', category: 'Self-help', stock: 2, cover: '/covers/atomic-habits.svg' },
-  { id: 5, title: 'Clean Code', author: 'Robert C. Martin', category: 'Teknologi', stock: 3, cover: '/covers/clean-code.svg' },
-  { id: 6, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', category: 'Teknologi', stock: 1, cover: '/covers/the-pragmatic-programmer.svg' },
-  { id: 7, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'Sejarah', stock: 2, cover: '/covers/sapiens.svg' },
-  { id: 8, title: 'Cantik Itu Luka', author: 'Eka Kurniawan', category: 'Novel', stock: 0, cover: '/covers/cantik-itu-luka.svg' },
+  { id: 1, title: 'Laskar Pelangi', author: 'Andrea Hirata', category: 'Novel', stock: 3, cover: '/covers/laskar-pelangi.jpg' },
+  { id: 2, title: 'Bumi Manusia', author: 'Pramoedya A. Toer', category: 'Novel', stock: 2, cover: '/covers/bumi-manusia.jpg' },
+  { id: 3, title: 'Filosofi Teras', author: 'Henry Manampiring', category: 'Self-help', stock: 4, cover: '/covers/filosofi-teras.jpg' },
+  { id: 4, title: 'Atomic Habits', author: 'James Clear', category: 'Self-help', stock: 2, cover: '/covers/atomic-habits.jpg' },
+  { id: 5, title: 'Clean Code', author: 'Robert C. Martin', category: 'Teknologi', stock: 3, cover: '/covers/clean-code.jpg' },
+  { id: 6, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', category: 'Teknologi', stock: 1, cover: '/covers/the-pragmatic-programmer.jpg' },
+  { id: 7, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'Sejarah', stock: 2, cover: '/covers/sapiens.jpg' },
+  { id: 8, title: 'Cantik Itu Luka', author: 'Eka Kurniawan', category: 'Novel', stock: 0, cover: '/covers/cantik-itu-luka.jpg' },
 ]
+
+export function resolveBookCover(book) {
+  if (book?.cover && !book.cover.endsWith('.svg') && !book.cover.includes('default-book')) {
+    return book.cover
+  }
+  const titleMap = {
+    'laskar pelangi': '/covers/laskar-pelangi.jpg',
+    'bumi manusia': '/covers/bumi-manusia.jpg',
+    'filosofi teras': '/covers/filosofi-teras.jpg',
+    'atomic habits': '/covers/atomic-habits.jpg',
+    'clean code': '/covers/clean-code.jpg',
+    'the pragmatic programmer': '/covers/the-pragmatic-programmer.jpg',
+    'sapiens': '/covers/sapiens.jpg',
+    'cantik itu luka': '/covers/cantik-itu-luka.jpg',
+  }
+  const cleanTitle = (book?.title || '').toLowerCase().trim()
+  if (titleMap[cleanTitle]) return titleMap[cleanTitle]
+  return book?.cover || '/covers/default-book.svg'
+}
 
 export const INITIAL_USERS = [
   { id: 'usr-1', name: 'Admin Utama', email: 'admin1@perpus.com', password: 'adminpassword123', role: 'admin' },
@@ -202,10 +221,11 @@ export async function fetchBooks() {
         .order('id', { ascending: true })
 
       if (!error && data && data.length > 0) {
+        const withCovers = data.map((b) => ({ ...b, cover: resolveBookCover(b) }))
         if (typeof window !== 'undefined') {
-          localStorage.setItem('perpus_books', JSON.stringify(data))
+          localStorage.setItem('perpus_books', JSON.stringify(withCovers))
         }
-        return data
+        return withCovers
       }
     } catch {}
   }
@@ -214,12 +234,13 @@ export async function fetchBooks() {
     const cached = localStorage.getItem('perpus_books')
     if (cached) {
       try {
-        return JSON.parse(cached)
+        const parsed = JSON.parse(cached)
+        return parsed.map((b) => ({ ...b, cover: resolveBookCover(b) }))
       } catch {}
     }
   }
 
-  return INITIAL_BOOKS
+  return INITIAL_BOOKS.map((b) => ({ ...b, cover: resolveBookCover(b) }))
 }
 
 export function getBooks() {
@@ -227,11 +248,12 @@ export function getBooks() {
     const cached = localStorage.getItem('perpus_books')
     if (cached) {
       try {
-        return JSON.parse(cached)
+        const parsed = JSON.parse(cached)
+        return parsed.map((b) => ({ ...b, cover: resolveBookCover(b) }))
       } catch {}
     }
   }
-  return INITIAL_BOOKS
+  return INITIAL_BOOKS.map((b) => ({ ...b, cover: resolveBookCover(b) }))
 }
 
 export async function fetchBookById(id) {
@@ -244,12 +266,15 @@ export async function fetchBookById(id) {
         .eq('id', Number(id))
         .single()
 
-      if (!error && data) return data
+      if (!error && data) {
+        return { ...data, cover: resolveBookCover(data) }
+      }
     } catch {}
   }
 
   const books = await fetchBooks()
-  return books.find((b) => Number(b.id) === Number(id)) || null
+  const found = books.find((b) => Number(b.id) === Number(id))
+  return found ? { ...found, cover: resolveBookCover(found) } : null
 }
 
 export function getBookById(id) {

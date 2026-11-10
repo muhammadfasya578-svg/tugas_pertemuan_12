@@ -11,6 +11,7 @@ import {
   borrowBookData,
   getSession,
   syncSessionFromSupabase,
+  resolveBookCover,
 } from '@/lib/storage'
 import {
   BookOpen,
@@ -135,19 +136,15 @@ function BookDetailContent() {
         {/* Card Detail Buku (2 Kolom) */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden grid grid-cols-1 md:grid-cols-12">
           {/* Kolom Kiri: Cover Image Viewport */}
-          <div className="md:col-span-5 bg-gradient-to-b from-slate-50 to-slate-100/60 p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-200">
-            <div className="relative aspect-[3/4.2] w-52 sm:w-60 rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-900/10 mb-5 bg-slate-100">
+          <div className="md:col-span-5 bg-gradient-to-b from-slate-50 via-white to-slate-100/60 p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-200">
+            <div className="relative h-72 sm:h-84 w-full flex items-center justify-center mb-5">
               <img
-                src={book.cover || '/covers/default-book.svg'}
+                src={resolveBookCover(book)}
                 alt={`Sampul buku ${book.title}`}
-                className="w-full h-full object-cover"
-              />
-              <div
-                className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/25 via-white/10 to-transparent pointer-events-none"
-                aria-hidden="true"
+                className="max-h-full max-w-full object-contain drop-shadow-2xl transition-transform duration-300 hover:scale-103"
               />
             </div>
-            <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full uppercase tracking-wider">
+            <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-1 rounded-full uppercase tracking-wider">
               {book.category}
             </span>
           </div>

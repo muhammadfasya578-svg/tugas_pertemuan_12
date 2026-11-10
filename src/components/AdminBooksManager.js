@@ -7,6 +7,7 @@ import {
   addBook,
   updateBookData,
   deleteBookData,
+  resolveBookCover,
 } from '@/lib/storage'
 import {
   Plus,
@@ -237,7 +238,7 @@ export default function AdminBooksManager() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-14 relative flex-shrink-0 rounded-lg bg-slate-100 overflow-hidden shadow-2xs border border-slate-200">
                           <img
-                            src={book.cover || '/covers/default-book.svg'}
+                            src={resolveBookCover(book)}
                             alt={`Sampul ${book.title}`}
                             className="w-full h-full object-cover"
                           />

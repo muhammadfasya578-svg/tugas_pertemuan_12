@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import BookCard from '@/components/BookCard'
 import Dropdown from '@/components/Dropdown'
+import { resolveBookCover } from '@/lib/storage'
 import { Search, BookX, X, ArrowRight } from 'lucide-react'
 
 export default function CatalogView({ initialBooks }) {
@@ -138,16 +139,11 @@ export default function CatalogView({ initialBooks }) {
                   aria-label={`Lihat buku ${book.title}`}
                 >
                   {/* Stand-up 3D Book with Realistic Soft Drop Shadow */}
-                  <div className="relative aspect-[3/4.2] w-36 sm:w-40 rounded-xl overflow-hidden shadow-lg border border-slate-200/80 transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-hover:scale-103 bg-slate-100">
+                  <div className="relative h-48 sm:h-56 w-full flex items-center justify-center transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-hover:scale-105">
                     <img
-                      src={book.cover || '/covers/default-book.svg'}
+                      src={resolveBookCover(book)}
                       alt={`Sampul buku ${book.title}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {/* Spine highlight overlay on left */}
-                    <div
-                      className="absolute inset-y-0 left-0 w-2.5 bg-gradient-to-r from-black/20 via-white/10 to-transparent pointer-events-none"
-                      aria-hidden="true"
+                      className="max-h-full max-w-full object-contain drop-shadow-xl"
                     />
                   </div>
 
