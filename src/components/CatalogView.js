@@ -4,7 +4,8 @@ import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import BookCard from '@/components/BookCard'
-import { Search, BookX, X, ChevronDown, ArrowRight } from 'lucide-react'
+import Dropdown from '@/components/Dropdown'
+import { Search, BookX, X, ArrowRight } from 'lucide-react'
 
 export default function CatalogView({ initialBooks }) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -15,6 +16,14 @@ export default function CatalogView({ initialBooks }) {
     const cats = new Set(initialBooks.map((b) => b.category))
     return ['Semua', ...Array.from(cats)]
   }, [initialBooks])
+
+  // Opsi dropdown kategori dengan label yang rapi
+  const categoryOptions = useMemo(() => {
+    return categories.map((cat) => ({
+      value: cat,
+      label: cat === 'Semua' ? 'Semua Kategori' : cat,
+    }))
+  }, [categories])
 
   // Filter buku berdasarkan search query dan kategori terpilih
   const filteredBooks = useMemo(() => {
@@ -55,23 +64,13 @@ export default function CatalogView({ initialBooks }) {
 
         {/* Unified Search Pill (Category Dropdown + Search Input + Button) */}
         <div className="w-full lg:max-w-xl bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          {/* Category Dropdown */}
-          <div className="relative flex-shrink-0">
-            <select
+          {/* Custom Category Dropdown */}
+          <div className="flex-shrink-0">
+            <Dropdown
+              options={categoryOptions}
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              aria-label="Pilih kategori buku"
-              className="w-full sm:w-auto appearance-none bg-slate-50 hover:bg-slate-100 rounded-xl pl-3.5 pr-8 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors cursor-pointer"
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat === 'Semua' ? 'Semua Kategori' : cat}
-                </option>
-              ))}
-            </select>
-            <ChevronDown
-              className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-              aria-hidden="true"
+              onChange={setSelectedCategory}
+              className="w-full sm:w-auto"
             />
           </div>
 
