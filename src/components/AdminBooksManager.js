@@ -437,6 +437,7 @@ export default function AdminBooksManager() {
                   {categories.length > 0 ? (
                     <Dropdown
                       variant="form"
+                      direction="up"
                       value={category}
                       onChange={(val) => setCategory(val)}
                       options={categories.map((c) => ({

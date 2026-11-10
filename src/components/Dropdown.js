@@ -13,8 +13,10 @@ export default function Dropdown({
   align = 'left',
   variant = 'default', // 'default' (compact pill) | 'form' (full-width form control)
   fullWidth = false,
+  direction = 'auto', // 'auto' | 'up' | 'down'
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [placement, setPlacement] = useState(direction === 'up' ? 'up' : 'down')
   const containerRef = useRef(null)
 
   const isFormVariant = variant === 'form' || fullWidth || className.includes('w-full')
@@ -30,6 +32,33 @@ export default function Dropdown({
   // Cari label untuk nilai yang sedang terpilih
   const selectedOption = normalizedOptions.find((opt) => opt.value === value)
   const displayLabel = selectedOption ? selectedOption.label : placeholder
+
+  // Deteksi arah dropdown (up/down) saat dibuka jika direction === 'auto'
+  useEffect(() => {
+    if (!isOpen) return
+    if (direction === 'up') {
+      setPlacement('up')
+      return
+    }
+    if (direction === 'down') {
+      setPlacement('down')
+      return
+    }
+
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+      // Jika ruang di bawah kurang dari 220px dan ruang di atas lebih leluasa, buka ke atas
+      if (spaceBelow < 220 && spaceAbove > spaceBelow) {
+        setPlacement('up')
+      } else {
+        setPlacement('down')
+      }
+    }
+  }, [isOpen, direction])
+
+  const activePlacement = direction === 'up' ? 'up' : direction === 'down' ? 'down' : placement
 
   // Tutup dropdown saat klik di luar container
   useEffect(() => {
@@ -101,7 +130,11 @@ export default function Dropdown({
       {isOpen && (
         <div
           role="listbox"
-          className={`absolute z-50 mt-1.5 bg-white rounded-xl border border-slate-200 shadow-xl py-1.5 max-h-60 overflow-y-auto animate-in fade-in duration-150 focus:outline-none ${
+          className={`absolute z-50 ${
+            activePlacement === 'up'
+              ? 'bottom-full mb-1.5 origin-bottom'
+              : 'top-full mt-1.5 origin-top'
+          } bg-white rounded-xl border border-slate-200 shadow-xl py-1.5 max-h-60 overflow-y-auto animate-in fade-in duration-150 focus:outline-none ${
             isFormVariant
               ? 'w-full min-w-full left-0 right-0'
               : `min-w-[170px] w-full sm:w-auto ${align === 'right' ? 'right-0' : 'left-0'}`
