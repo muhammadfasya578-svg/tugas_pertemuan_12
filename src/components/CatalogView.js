@@ -138,27 +138,25 @@ export default function CatalogView({ initialBooks }) {
                   aria-label={`Lihat buku ${book.title}`}
                 >
                   {/* Stand-up 3D Book with Realistic Soft Drop Shadow */}
-                  <div className="relative transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-hover:scale-103">
-                    <Image
+                  <div className="relative aspect-[3/4.2] w-36 sm:w-40 rounded-xl overflow-hidden shadow-lg border border-slate-200/80 transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-hover:scale-103 bg-slate-100">
+                    <img
                       src={book.cover || '/covers/default-book.svg'}
                       alt={`Sampul buku ${book.title}`}
-                      width={142}
-                      height={202}
-                      className="rounded-lg shadow-lg object-cover ring-1 ring-slate-900/10"
+                      className="w-full h-full object-cover"
                     />
                     {/* Spine highlight overlay on left */}
                     <div
-                      className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-white/35 to-transparent rounded-l-lg pointer-events-none"
+                      className="absolute inset-y-0 left-0 w-2.5 bg-gradient-to-r from-black/20 via-white/10 to-transparent pointer-events-none"
                       aria-hidden="true"
                     />
                   </div>
 
                   {/* Metadata Below Stand-up Book */}
                   <div className="mt-4 w-full px-1">
-                    <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-xs sm:text-sm line-clamp-1" title={book.title}>
+                    <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-xs sm:text-sm line-clamp-1 capitalize" title={book.title}>
                       {book.title}
                     </h3>
-                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5 capitalize">
                       {book.author}
                     </p>
                     <span className="inline-block mt-1.5 text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/80">
