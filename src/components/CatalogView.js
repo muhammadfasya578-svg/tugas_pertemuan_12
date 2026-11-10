@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
 import BookCard from '@/components/BookCard'
-import { Search, BookX, X } from 'lucide-react'
+import { Search, BookX, X, ChevronDown, ArrowRight } from 'lucide-react'
 
 export default function CatalogView({ initialBooks }) {
   const [searchQuery, setSearchQuery] = useState('')
@@ -14,7 +16,7 @@ export default function CatalogView({ initialBooks }) {
     return ['Semua', ...Array.from(cats)]
   }, [initialBooks])
 
-  // Filter buku berdasarkan search query dan kategori
+  // Filter buku berdasarkan search query dan kategori terpilih
   const filteredBooks = useMemo(() => {
     return initialBooks.filter((book) => {
       const matchSearch =
@@ -28,48 +30,168 @@ export default function CatalogView({ initialBooks }) {
     })
   }, [initialBooks, searchQuery, selectedCategory])
 
+  // Buku rekomendasi terpopuler / tersedia untuk rak atas
+  const recommendedBooks = useMemo(() => {
+    return initialBooks.filter((b) => b.stock > 0).slice(0, 4)
+  }, [initialBooks])
+
+  const isFiltering = searchQuery.trim().length > 0 || selectedCategory !== 'Semua'
+
   return (
-    <div className="space-y-6">
-      {/* Header & Kotak Pencarian */}
-      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 pb-2 border-b border-slate-200">
+    <div className="space-y-10">
+      {/* Top Header: Discover Title & Dribbble-Style Unified Search Bar */}
+      <section
+        aria-label="Pencarian dan penjelajahan buku"
+        className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 pb-2"
+      >
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            Katalog Buku
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            Jelajahi Buku
           </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            Jelajahi koleksi buku perpustakaan dan pinjam langsung dengan durasi 7 hari.
+          <p className="text-sm text-slate-500 mt-1">
+            Temukan dan pinjam bacaan favoritmu dari koleksi perpustakaan.
           </p>
         </div>
 
-        {/* Input Pencarian */}
-        <div className="w-full md:w-80 relative">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <Search className="w-4 h-4" aria-hidden="true" />
+        {/* Unified Search Pill (Category Dropdown + Search Input + Button) */}
+        <div className="w-full lg:max-w-xl bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-1.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          {/* Category Dropdown */}
+          <div className="relative flex-shrink-0">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              aria-label="Pilih kategori buku"
+              className="w-full sm:w-auto appearance-none bg-slate-50 hover:bg-slate-100 rounded-xl pl-3.5 pr-8 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors cursor-pointer"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat === 'Semua' ? 'Semua Kategori' : cat}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              aria-hidden="true"
+            />
           </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari judul atau penulis..."
-            aria-label="Cari judul atau nama penulis buku"
-            className="w-full h-11 pl-10 pr-9 text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors shadow-2xs"
-          />
-          {searchQuery && (
+
+          <div className="hidden sm:block w-px h-6 bg-slate-200" aria-hidden="true" />
+
+          {/* Search Input Field */}
+          <div className="relative flex-1 flex items-center">
+            <Search className="w-4 h-4 text-slate-400 ml-2.5 mr-2 flex-shrink-0" aria-hidden="true" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari judul buku atau penulis..."
+              aria-label="Cari judul buku atau nama penulis"
+              className="w-full text-xs sm:text-sm bg-transparent placeholder-slate-400 text-slate-900 focus:outline-none py-1.5 pr-8"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600"
+                aria-label="Hapus kata kunci pencarian"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+
+          {/* Submit Action */}
+          <button
+            type="button"
+            onClick={() => {}}
+            className="min-h-[40px] px-5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-semibold text-xs transition-colors flex items-center justify-center shadow-2xs cursor-pointer"
+          >
+            Cari
+          </button>
+        </div>
+      </section>
+
+      {/* Section 1: Rekomendasi Buku (Featured Shelf) - Tampil saat tidak sedang mencari */}
+      {!isFiltering && recommendedBooks.length > 0 && (
+        <section aria-label="Rekomendasi buku unggulan" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900">
+              Rekomendasi Buku
+            </h2>
             <button
               type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
-              aria-label="Hapus kata kunci pencarian"
+              onClick={() => setSelectedCategory('Semua')}
+              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1 cursor-pointer"
             >
-              <X className="w-4 h-4" aria-hidden="true" />
+              <span>Lihat semua</span>
+              <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
             </button>
-          )}
-        </div>
-      </div>
+          </div>
 
-      {/* Filter Kategori & Info Hasil */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          {/* Physical Standing Book Showcase */}
+          <div className="bg-gradient-to-b from-slate-100/70 via-slate-50 to-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-2xs">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 items-end">
+              {recommendedBooks.map((book) => (
+                <Link
+                  key={book.id}
+                  href={`/buku/${book.id}`}
+                  className="group flex flex-col items-center text-center focus:outline-none"
+                  aria-label={`Lihat buku ${book.title}`}
+                >
+                  {/* Stand-up 3D Book with Realistic Soft Drop Shadow */}
+                  <div className="relative transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-hover:scale-103">
+                    <Image
+                      src={book.cover || '/covers/default-book.svg'}
+                      alt={`Sampul buku ${book.title}`}
+                      width={142}
+                      height={202}
+                      className="rounded-lg shadow-lg object-cover ring-1 ring-slate-900/10"
+                    />
+                    {/* Spine highlight overlay on left */}
+                    <div
+                      className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-white/35 to-transparent rounded-l-lg pointer-events-none"
+                      aria-hidden="true"
+                    />
+                  </div>
+
+                  {/* Metadata Below Stand-up Book */}
+                  <div className="mt-4 w-full px-1">
+                    <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-xs sm:text-sm line-clamp-1" title={book.title}>
+                      {book.title}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                      {book.author}
+                    </p>
+                    <span className="inline-block mt-1.5 text-[10px] font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/80">
+                      Sisa {book.stock} buku
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Section 2: Kategori Buku & Daftar Lengkap */}
+      <section aria-label="Daftar koleksi buku lengkap" className="space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">
+              {isFiltering ? 'Hasil Pencarian Koleksi' : 'Kategori Buku'}
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Pilih kategori atau jelajahi seluruh koleksi buku perpustakaan.
+            </p>
+          </div>
+
+          <div className="text-xs text-slate-500 font-medium">
+            Menampilkan <strong className="text-slate-900 font-bold">{filteredBooks.length}</strong> dari {initialBooks.length} buku
+          </div>
+        </div>
+
+        {/* Category Pill Buttons */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {categories.map((cat) => {
             const isActive = selectedCategory === cat
             return (
@@ -77,9 +199,9 @@ export default function CatalogView({ initialBooks }) {
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`min-h-[40px] px-4 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-emerald-700 text-white font-semibold shadow-2xs'
+                    ? 'bg-emerald-700 text-white shadow-2xs'
                     : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
@@ -89,45 +211,39 @@ export default function CatalogView({ initialBooks }) {
           })}
         </div>
 
-        <div className="text-xs text-slate-500 font-medium">
-          Menampilkan <strong className="text-slate-800 font-semibold">{filteredBooks.length}</strong> dari {initialBooks.length} buku
-        </div>
-      </div>
-
-      {/* Grid Buku */}
-      {filteredBooks.length > 0 ? (
-        <section aria-label="Daftar koleksi buku">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {/* Books Grid */}
+        {filteredBooks.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
             {filteredBooks.map((book) => (
               <BookCard key={book.id} book={book} />
             ))}
           </div>
-        </section>
-      ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto shadow-xs">
-          <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-3">
-            <BookX className="w-7 h-7" aria-hidden="true" />
+        ) : (
+          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-md mx-auto shadow-xs">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto mb-3">
+              <BookX className="w-7 h-7" aria-hidden="true" />
+            </div>
+            <h3 className="text-base font-bold text-slate-900">
+              Tidak Ada Buku Ditemukan
+            </h3>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              Tidak ada buku yang cocok dengan kata kunci atau kategori yang dipilih.
+            </p>
+            {isFiltering && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('')
+                  setSelectedCategory('Semua')
+                }}
+                className="mt-4 min-h-[40px] px-4 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100 transition-colors cursor-pointer"
+              >
+                Reset Filter & Pencarian
+              </button>
+            )}
           </div>
-          <h2 className="text-base font-bold text-slate-900">
-            Tidak Ada Buku Ditemukan
-          </h2>
-          <p className="text-xs text-slate-600 mt-1">
-            Coba ubah kata kunci pencarian atau pilih kategori lain.
-          </p>
-          {(searchQuery || selectedCategory !== 'Semua') && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('')
-                setSelectedCategory('Semua')
-              }}
-              className="mt-4 min-h-[40px] px-4 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100 transition-colors cursor-pointer"
-            >
-              Reset Filter & Pencarian
-            </button>
-          )}
-        </div>
-      )}
+        )}
+      </section>
     </div>
   )
 }

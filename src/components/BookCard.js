@@ -1,41 +1,52 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { ArrowRight } from 'lucide-react'
 
 export default function BookCard({ book }) {
   const isAvailable = book.stock > 0
   const coverSrc = book.cover || '/covers/default-book.svg'
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-2xs hover:border-emerald-300 hover:shadow-xs transition-all duration-200 flex flex-col overflow-hidden">
-      {/* Cover Image */}
-      <div className="h-52 bg-slate-50 flex items-center justify-center p-4 border-b border-slate-100 relative">
-        <Image
-          src={coverSrc}
-          alt={`Sampul buku ${book.title}`}
-          width={124}
-          height={174}
-          className="rounded shadow-xs object-cover"
-        />
-        <span className="absolute top-3 right-3 text-[11px] font-medium text-emerald-800 bg-white/95 px-2.5 py-0.5 rounded-md border border-slate-200 shadow-2xs">
+    <article className="group rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs hover:border-emerald-300 hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+      {/* Book Cover Stage */}
+      <div className="relative mb-3 flex items-center justify-center py-5 bg-gradient-to-b from-slate-50 to-slate-100/50 rounded-xl overflow-hidden group-hover:bg-emerald-50/40 transition-colors">
+        {/* Category Pill */}
+        <span className="absolute top-2.5 right-2.5 text-[10px] font-semibold text-emerald-800 bg-white/95 backdrop-blur-xs px-2.5 py-0.5 rounded-md border border-slate-200/80 shadow-2xs z-10">
           {book.category}
         </span>
+
+        {/* Physical 3D Book Cover */}
+        <div className="relative transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-102">
+          <Image
+            src={coverSrc}
+            alt={`Sampul buku ${book.title}`}
+            width={124}
+            height={176}
+            className="rounded-md shadow-md object-cover ring-1 ring-slate-900/10"
+          />
+          {/* Subtle book spine lighting effect */}
+          <div
+            className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-r from-white/30 to-transparent rounded-l-md pointer-events-none"
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4 flex flex-col flex-1 justify-between gap-3">
+      {/* Book Metadata & Action */}
+      <div className="flex flex-col flex-1 justify-between gap-3">
         <div>
           <h2
-            className="font-semibold text-slate-900 line-clamp-1 text-sm sm:text-base leading-snug"
+            className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-sm sm:text-base leading-snug line-clamp-1"
             title={book.title}
           >
             {book.title}
           </h2>
-          <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
             {book.author}
           </p>
         </div>
 
-        {/* Stock Status & Action Button */}
+        {/* Stock Status & CTA Button */}
         <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
           {isAvailable ? (
             <span className="text-xs font-semibold text-emerald-700">
@@ -49,12 +60,14 @@ export default function BookCard({ book }) {
 
           <Link
             href={`/buku/${book.id}`}
-            className="min-h-[36px] px-3.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs transition-colors flex items-center justify-center"
+            aria-label={`Lihat detail dan pinjam buku ${book.title}`}
+            className="min-h-[36px] px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-medium text-xs transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
-            Lihat Buku
+            <span>Lihat Buku</span>
+            <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
           </Link>
         </div>
       </div>
-    </div>
+    </article>
   )
 }
