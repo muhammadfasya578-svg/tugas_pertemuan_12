@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import Dropdown from '@/components/Dropdown'
 import {
   fetchBooks,
+  fetchCategories,
   addBook,
   updateBookData,
   deleteBookData,
@@ -23,6 +26,7 @@ import {
 
 export default function AdminBooksManager() {
   const [books, setBooks] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -40,8 +44,12 @@ export default function AdminBooksManager() {
 
   const loadBooks = async () => {
     setLoading(true)
-    const data = await fetchBooks()
-    setBooks(data)
+    const [bookData, catData] = await Promise.all([
+      fetchBooks(),
+      fetchCategories(),
+    ])
+    setBooks(bookData)
+    setCategories(catData)
     setLoading(false)
   }
 
@@ -65,7 +73,8 @@ export default function AdminBooksManager() {
     setSelectedBook(null)
     setTitle('')
     setAuthor('')
-    setCategory('Novel')
+    const defaultCat = categories.length > 0 ? categories[0].name : 'Novel'
+    setCategory(defaultCat)
     setStock('1')
     setCover('')
     setErrorMsg('')
@@ -422,17 +431,38 @@ export default function AdminBooksManager() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
-                    Kategori
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    placeholder="Novel, Teknologi, dll"
-                    className="w-full h-11 px-3.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      Kategori
+                    </label>
+                    <Link
+                      href="/admin/kategori"
+                      className="text-[11px] text-emerald-700 hover:underline font-medium"
+                      target="_blank"
+                    >
+                      + Kelola Kategori
+                    </Link>
+                  </div>
+                  {categories.length > 0 ? (
+                    <Dropdown
+                      value={category}
+                      onChange={(val) => setCategory(val)}
+                      options={categories.map((c) => ({
+                        value: c.name,
+                        label: c.name,
+                      }))}
+                      className="w-full"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      placeholder="Novel, Teknologi, dll"
+                      className="w-full h-11 px-3.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                  )}
                 </div>
 
                 <div>

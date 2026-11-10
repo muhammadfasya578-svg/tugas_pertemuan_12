@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   BookMarked,
+  Tags,
   ClipboardList,
   Users,
   BookOpen,
@@ -21,6 +22,7 @@ export default function AdminSidebar({ profile }) {
   const menuItems = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/buku', label: 'Kelola Buku', icon: BookMarked },
+    { href: '/admin/kategori', label: 'Kelola Kategori', icon: Tags },
     { href: '/admin/peminjaman', label: 'Peminjaman', icon: ClipboardList },
     { href: '/admin/user', label: 'Daftar User', icon: Users },
   ]

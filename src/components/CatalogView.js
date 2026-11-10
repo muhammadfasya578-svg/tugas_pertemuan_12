@@ -8,15 +8,19 @@ import Dropdown from '@/components/Dropdown'
 import { resolveBookCover } from '@/lib/storage'
 import { Search, BookX, X, ArrowRight } from 'lucide-react'
 
-export default function CatalogView({ initialBooks }) {
+export default function CatalogView({ initialBooks, initialCategories = [] }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Semua')
 
-  // Ekstrak kategori unik dari data buku
+  // Kategori murni dari database kategori (dengan fallback ke kategori buku jika kosong)
   const categories = useMemo(() => {
-    const cats = new Set(initialBooks.map((b) => b.category))
+    if (initialCategories && initialCategories.length > 0) {
+      const dbCatNames = initialCategories.map((c) => (typeof c === 'string' ? c : c.name)).filter(Boolean)
+      return ['Semua', ...Array.from(new Set(dbCatNames))]
+    }
+    const cats = new Set(initialBooks.map((b) => b.category).filter(Boolean))
     return ['Semua', ...Array.from(cats)]
-  }, [initialBooks])
+  }, [initialBooks, initialCategories])
 
   // Opsi dropdown kategori dengan label yang rapi
   const categoryOptions = useMemo(() => {

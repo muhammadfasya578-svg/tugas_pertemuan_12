@@ -491,3 +491,153 @@ export async function fetchDashboardMetrics() {
     isLive: false,
   }
 }
+
+export async function fetchCategories() {
+  const supabase = getSupabase()
+  if (!supabase) return []
+
+  try {
+    const { data: booksData } = await supabase.from('books').select('category')
+    const countMap = {}
+    ;(booksData || []).forEach((b) => {
+      if (b.category) {
+        countMap[b.category] = (countMap[b.category] || 0) + 1
+      }
+    })
+
+    const { data: catData, error: catErr } = await supabase
+      .from('categories')
+      .select('*')
+      .order('name', { ascending: true })
+
+    if (!catErr && catData) {
+      return catData.map((c) => ({
+        ...c,
+        book_count: countMap[c.name] || 0,
+      }))
+    }
+
+    // Jika tabel categories belum dibuat di Supabase, ekstrak secara dinamis dari tabel books
+    if (booksData && booksData.length > 0) {
+      const distinctNames = Array.from(
+        new Set(booksData.map((b) => b.category).filter(Boolean))
+      ).sort()
+
+      return distinctNames.map((name, idx) => ({
+        id: `derived-${idx + 1}`,
+        name,
+        description: `Kategori ${name}`,
+        book_count: countMap[name] || 0,
+        isDerived: true,
+      }))
+    }
+
+    return []
+  } catch (err) {
+    console.error('fetchCategories error:', err)
+    return []
+  }
+}
+
+export async function addCategory({ name, description = '' }) {
+  const supabase = getSupabase()
+  if (!supabase) return { error: 'Koneksi Supabase tidak aktif' }
+
+  const cleanName = name.trim()
+  if (!cleanName) return { error: 'Nama kategori wajib diisi' }
+
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({
+        name: cleanName,
+        description: description.trim(),
+      })
+      .select()
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST205') {
+        return {
+          error:
+            "Tabel 'categories' belum dibuat di database Supabase. Silakan jalankan script SQL supabase_setup.sql di Supabase SQL Editor.",
+        }
+      }
+      if (error.code === '23505') {
+        return { error: `Kategori "${cleanName}" sudah terdaftar.` }
+      }
+      return { error: error.message }
+    }
+
+    return { success: true, category: data }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+export async function updateCategory(id, { name, description = '' }, oldName = null) {
+  const supabase = getSupabase()
+  if (!supabase) return { error: 'Koneksi Supabase tidak aktif' }
+
+  const cleanName = name.trim()
+  if (!cleanName) return { error: 'Nama kategori tidak boleh kosong' }
+
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .update({
+        name: cleanName,
+        description: description.trim(),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      if (error.code === '23505') {
+        return { error: `Kategori "${cleanName}" sudah ada.` }
+      }
+      return { error: error.message }
+    }
+
+    // Jika nama kategori berubah, perbarui juga buku yang memakai kategori lama
+    if (oldName && oldName !== cleanName) {
+      await supabase
+        .from('books')
+        .update({ category: cleanName })
+        .eq('category', oldName)
+    }
+
+    return { success: true, category: data }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+export async function deleteCategory(id, name) {
+  const supabase = getSupabase()
+  if (!supabase) return { error: 'Koneksi Supabase tidak aktif' }
+
+  try {
+    // Cek apakah masih ada buku yang memakai kategori ini
+    const { data: booksUsing } = await supabase
+      .from('books')
+      .select('id, title')
+      .eq('category', name)
+
+    if (booksUsing && booksUsing.length > 0) {
+      return {
+        error: `Kategori "${name}" tidak dapat dihapus karena masih digunakan oleh ${booksUsing.length} buku. Ubah kategori buku terkait terlebih dahulu.`,
+      }
+    }
+
+    const { error } = await supabase.from('categories').delete().eq('id', id)
+    if (error) {
+      return { error: error.message }
+    }
+
+    return { success: true }
+  } catch (e) {
+    return { error: e.message }
+  }
+}

@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import AppSidebar from '@/components/AppSidebar'
 import CatalogView from '@/components/CatalogView'
-import { fetchBooks, getSession, syncSessionFromSupabase } from '@/lib/storage'
+import { fetchBooks, fetchCategories, getSession, syncSessionFromSupabase } from '@/lib/storage'
 import { Loader2 } from 'lucide-react'
 
 export default function HomePage() {
   const [books, setBooks] = useState([])
+  const [categories, setCategories] = useState([])
   const [profile, setProfile] = useState(() => {
     if (typeof window === 'undefined') return null
     return getSession()
@@ -18,13 +19,15 @@ export default function HomePage() {
     let isMounted = true
 
     async function loadData() {
-      const [bookData, userSession] = await Promise.all([
+      const [bookData, catData, userSession] = await Promise.all([
         fetchBooks(),
+        fetchCategories(),
         syncSessionFromSupabase(),
       ])
 
       if (isMounted) {
         setBooks(bookData)
+        setCategories(catData)
         setProfile(userSession)
         setLoading(false)
       }
@@ -49,7 +52,7 @@ export default function HomePage() {
               <p className="text-sm">Memuat katalog buku dari Supabase...</p>
             </div>
           ) : (
-            <CatalogView initialBooks={books} />
+            <CatalogView initialBooks={books} initialCategories={categories} />
           )}
         </main>
       </div>
