@@ -173,7 +173,11 @@ export default function CatalogView({ initialBooks }) {
       )}
 
       {/* Section 2: Kategori Buku & Daftar Lengkap */}
-      <section aria-label="Daftar koleksi buku lengkap" className="space-y-5">
+      <section
+        id="kategori-section"
+        aria-label="Daftar koleksi buku lengkap"
+        className="space-y-5 scroll-mt-6"
+      >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-slate-900">

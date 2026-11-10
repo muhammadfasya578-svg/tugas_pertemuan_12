@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import Navbar from '@/components/Navbar'
+import AppSidebar from '@/components/AppSidebar'
 import {
   fetchBookById,
   fetchLoans,
@@ -118,10 +118,11 @@ function BookDetailContent() {
   const isOutOfStock = book.stock <= 0
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar profile={user} />
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      <AppSidebar profile={user} />
 
-      <main className="max-w-5xl mx-auto px-4 py-8 flex-1 w-full">
+      <div className="flex-1 flex flex-col min-w-0">
+        <main className="max-w-5xl mx-auto px-4 py-8 flex-1 w-full">
         {/* Tombol Kembali */}
         <Link
           href="/"
@@ -246,6 +247,7 @@ function BookDetailContent() {
           </div>
         </div>
       </main>
+      </div>
     </div>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Navbar from '@/components/Navbar'
+import AppSidebar from '@/components/AppSidebar'
 import StatusBadge from '@/components/StatusBadge'
 import {
   fetchLoans,
@@ -54,10 +54,11 @@ export default function RiwayatPage() {
   const activeLoansCount = loans.filter((l) => l.status === 'dipinjam').length
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar profile={user} />
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      <AppSidebar profile={user} />
 
-      <main className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full space-y-6">
+      <div className="flex-1 flex flex-col min-w-0">
+        <main className="p-4 sm:p-8 max-w-6xl w-full mx-auto flex-1 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -166,6 +167,7 @@ export default function RiwayatPage() {
           </div>
         )}
       </main>
+      </div>
     </div>
   )
 }
