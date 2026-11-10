@@ -431,27 +431,19 @@ export default function AdminBooksManager() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Kategori
-                    </label>
-                    <Link
-                      href="/admin/kategori"
-                      className="text-[11px] text-emerald-700 hover:underline font-medium"
-                      target="_blank"
-                    >
-                      + Kelola Kategori
-                    </Link>
-                  </div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                    Kategori
+                  </label>
                   {categories.length > 0 ? (
                     <Dropdown
+                      variant="form"
                       value={category}
                       onChange={(val) => setCategory(val)}
                       options={categories.map((c) => ({
                         value: c.name,
                         label: c.name,
                       }))}
-                      className="w-full"
+                      placeholder="Pilih Kategori"
                     />
                   ) : (
                     <input
@@ -463,6 +455,15 @@ export default function AdminBooksManager() {
                       className="w-full h-11 px-3.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     />
                   )}
+                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Kategori database</span>
+                    <Link
+                      href="/admin/kategori"
+                      className="text-emerald-700 hover:text-emerald-800 font-medium hover:underline"
+                    >
+                      + Kelola Kategori
+                    </Link>
+                  </div>
                 </div>
 
                 <div>

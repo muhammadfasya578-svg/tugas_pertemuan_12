@@ -11,9 +11,13 @@ export default function Dropdown({
   className = '',
   menuClassName = '',
   align = 'left',
+  variant = 'default', // 'default' (compact pill) | 'form' (full-width form control)
+  fullWidth = false,
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef(null)
+
+  const isFormVariant = variant === 'form' || fullWidth || className.includes('w-full')
 
   // Normalisasi options agar bisa menerima array of strings atau array of objects
   const normalizedOptions = options.map((opt) => {
@@ -60,22 +64,35 @@ export default function Dropdown({
   }
 
   return (
-    <div ref={containerRef} className="relative inline-block text-left">
+    <div
+      ref={containerRef}
+      className={`relative text-left ${isFormVariant ? 'w-full block' : 'inline-block'}`}
+    >
       {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`flex items-center justify-between gap-2 bg-slate-50 hover:bg-slate-100 border border-transparent hover:border-slate-200 text-slate-800 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer ${
-          isOpen ? 'bg-slate-100 ring-2 ring-emerald-500/20 border-slate-200' : ''
-        } ${className}`}
+        className={
+          isFormVariant
+            ? `w-full h-11 px-3.5 text-sm rounded-xl border bg-white text-slate-900 flex items-center justify-between gap-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 cursor-pointer ${
+                isOpen
+                  ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300'
+              } ${className}`
+            : `flex items-center justify-between gap-2 bg-slate-50 hover:bg-slate-100 border border-transparent hover:border-slate-200 text-slate-800 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer ${
+                isOpen ? 'bg-slate-100 ring-2 ring-emerald-500/20 border-slate-200' : ''
+              } ${className}`
+        }
       >
-        <span className="truncate">{displayLabel}</span>
+        <span className={`truncate ${!selectedOption && isFormVariant ? 'text-slate-400' : ''}`}>
+          {displayLabel}
+        </span>
         <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 flex-shrink-0 ${
-            isOpen ? 'rotate-180 text-emerald-700' : ''
-          }`}
+          className={`text-slate-400 transition-transform duration-200 flex-shrink-0 ${
+            isFormVariant ? 'w-4 h-4' : 'w-3.5 h-3.5'
+          } ${isOpen ? 'rotate-180 text-emerald-700' : ''}`}
           aria-hidden="true"
         />
       </button>
@@ -84,8 +101,10 @@ export default function Dropdown({
       {isOpen && (
         <div
           role="listbox"
-          className={`absolute z-50 mt-1.5 min-w-[170px] w-full sm:w-auto bg-white rounded-xl border border-slate-200 shadow-lg py-1 animate-in fade-in duration-150 focus:outline-none ${
-            align === 'right' ? 'right-0' : 'left-0'
+          className={`absolute z-50 mt-1.5 bg-white rounded-xl border border-slate-200 shadow-xl py-1.5 max-h-60 overflow-y-auto animate-in fade-in duration-150 focus:outline-none ${
+            isFormVariant
+              ? 'w-full min-w-full left-0 right-0'
+              : `min-w-[170px] w-full sm:w-auto ${align === 'right' ? 'right-0' : 'left-0'}`
           } ${menuClassName}`}
         >
           {normalizedOptions.map((opt) => {
@@ -97,7 +116,7 @@ export default function Dropdown({
                 role="option"
                 aria-selected={isSelected}
                 onClick={() => handleSelect(opt.value)}
-                className={`w-full text-left px-3 py-2 text-xs font-medium transition-colors flex items-center justify-between gap-3 cursor-pointer rounded-lg mx-1 my-0.5 ${
+                className={`w-full text-left px-3.5 py-2.5 text-sm font-medium transition-colors flex items-center justify-between gap-3 cursor-pointer rounded-lg mx-1 my-0.5 ${
                   isSelected
                     ? 'bg-emerald-50 text-emerald-800 font-semibold'
                     : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
@@ -106,7 +125,7 @@ export default function Dropdown({
               >
                 <span className="truncate">{opt.label}</span>
                 {isSelected && (
-                  <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" aria-hidden="true" />
+                  <Check className="w-4 h-4 text-emerald-600 flex-shrink-0" aria-hidden="true" />
                 )}
               </button>
             )
