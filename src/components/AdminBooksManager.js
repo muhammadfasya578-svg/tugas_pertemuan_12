@@ -17,6 +17,8 @@ import {
   BookOpen,
   AlertCircle,
   Loader2,
+  Upload,
+  Image as ImageIcon,
 } from 'lucide-react'
 
 export default function AdminBooksManager() {
@@ -32,6 +34,7 @@ export default function AdminBooksManager() {
   const [author, setAuthor] = useState('')
   const [category, setCategory] = useState('')
   const [stock, setStock] = useState('1')
+  const [cover, setCover] = useState('')
   const [errorMsg, setErrorMsg] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -64,6 +67,7 @@ export default function AdminBooksManager() {
     setAuthor('')
     setCategory('Novel')
     setStock('1')
+    setCover('')
     setErrorMsg('')
     setIsModalOpen(true)
   }
@@ -75,6 +79,7 @@ export default function AdminBooksManager() {
     setAuthor(book.author)
     setCategory(book.category)
     setStock(book.stock.toString())
+    setCover(book.cover || '')
     setErrorMsg('')
     setIsModalOpen(true)
   }
@@ -84,6 +89,59 @@ export default function AdminBooksManager() {
     setErrorMsg('')
   }
 
+  // Handle upload dan kompresi gambar cover di sisi client
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('File harus berupa format gambar (PNG, JPG, WEBP, atau SVG)')
+      return
+    }
+
+    if (file.type === 'image/svg+xml') {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setCover(event.target.result)
+      }
+      reader.readAsDataURL(file)
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new window.Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const maxDim = 600
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width)
+            width = maxDim
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height)
+            height = maxDim
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        setCover(compressedDataUrl)
+      }
+      img.src = event.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setErrorMsg('')
@@ -91,9 +149,9 @@ export default function AdminBooksManager() {
 
     let res
     if (modalMode === 'add') {
-      res = await addBook({ title, author, category, stock })
+      res = await addBook({ title, author, category, stock, cover })
     } else {
-      res = await updateBookData(selectedBook.id, { title, author, category, stock })
+      res = await updateBookData(selectedBook.id, { title, author, category, stock, cover })
     }
     setSaving(false)
 
@@ -176,10 +234,21 @@ export default function AdminBooksManager() {
                       #{book.id}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-900">
-                        {book.title}
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-14 relative flex-shrink-0 rounded-lg bg-slate-100 overflow-hidden shadow-2xs border border-slate-200">
+                          <img
+                            src={book.cover || '/covers/default-book.svg'}
+                            alt={`Sampul ${book.title}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-slate-900 line-clamp-1">
+                            {book.title}
+                          </div>
+                          <div className="text-xs text-slate-500 line-clamp-1">{book.author}</div>
+                        </div>
                       </div>
-                      <div className="text-xs text-slate-600">{book.author}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -240,7 +309,7 @@ export default function AdminBooksManager() {
           aria-labelledby="modal-book-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs"
         >
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
               <h3 id="modal-book-title" className="text-lg font-bold text-slate-900">
                 {modalMode === 'add' ? 'Tambah Buku Baru' : 'Edit Data Buku'}
@@ -263,6 +332,66 @@ export default function AdminBooksManager() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Cover Upload Dropzone / Preview */}
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Gambar Sampul Buku
+                </label>
+
+                {cover ? (
+                  <div className="flex items-center gap-4 p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70">
+                    <div className="w-16 h-22 relative rounded-lg overflow-hidden shadow-xs flex-shrink-0 bg-white border border-slate-200">
+                      <img
+                        src={cover}
+                        alt="Preview Sampul"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <p className="text-xs font-bold text-slate-800">Sampul Terpilih</p>
+                      <p className="text-[11px] text-slate-500">Gambar berhasil dimuat dan siap disimpan.</p>
+                      <div className="flex items-center gap-3 pt-1">
+                        <label className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer">
+                          <span>Ganti Gambar</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="sr-only"
+                          />
+                        </label>
+                        <span className="text-slate-300" aria-hidden="true">•</span>
+                        <button
+                          type="button"
+                          onClick={() => setCover('')}
+                          className="text-xs font-semibold text-red-600 hover:text-red-700 cursor-pointer"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/20 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer transition-colors group">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 group-hover:bg-emerald-100 text-slate-500 group-hover:text-emerald-700 flex items-center justify-center mb-2 transition-colors">
+                      <Upload className="w-5 h-5" aria-hidden="true" />
+                    </div>
+                    <p className="text-xs font-semibold text-slate-800 group-hover:text-emerald-800 text-center">
+                      Klik untuk unggah gambar sampul buku
+                    </p>
+                    <p className="text-[11px] text-slate-500 text-center mt-0.5">
+                      Format PNG, JPG, WEBP, atau SVG (otomatis dioptimalkan)
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="sr-only"
+                    />
+                  </label>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
                   Judul Buku
