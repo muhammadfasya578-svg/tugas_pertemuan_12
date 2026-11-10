@@ -18,9 +18,6 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
-  Info,
-  Copy,
-  Check,
 } from 'lucide-react'
 
 export default function AdminCategoriesManager() {
@@ -37,7 +34,6 @@ export default function AdminCategoriesManager() {
   const [saving, setSaving] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
-  const [copiedSql, setCopiedSql] = useState(false)
 
   const loadCategories = async () => {
     setLoading(true)
@@ -137,8 +133,6 @@ export default function AdminCategoriesManager() {
     }
   }
 
-  const hasDerivedCategories = categories.some((c) => c.isDerived)
-
   const filteredCategories = categories.filter((c) => {
     const s = search.toLowerCase()
     return (
@@ -146,30 +140,6 @@ export default function AdminCategoriesManager() {
       (c.description && c.description.toLowerCase().includes(s))
     )
   })
-
-  const totalBooksAssigned = categories.reduce(
-    (acc, curr) => acc + (curr.book_count || 0),
-    0
-  )
-
-  const copySqlSnippet = () => {
-    const sql = `CREATE TABLE IF NOT EXISTS public.categories (
-  id bigint generated always as identity primary key,
-  name text not null unique,
-  description text,
-  created_at timestamptz not null default now()
-);
-ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "categories: semua user login boleh baca" ON public.categories FOR SELECT TO authenticated USING (true);
-CREATE POLICY "categories: admin insert" ON public.categories FOR INSERT TO authenticated WITH CHECK (public.is_admin());
-CREATE POLICY "categories: admin update" ON public.categories FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
-CREATE POLICY "categories: admin delete" ON public.categories FOR DELETE TO authenticated USING (public.is_admin());
-INSERT INTO public.categories (name) SELECT DISTINCT category FROM public.books WHERE category IS NOT NULL ON CONFLICT (name) DO NOTHING;`
-
-    navigator.clipboard.writeText(sql)
-    setCopiedSql(true)
-    setTimeout(() => setCopiedSql(false), 3000)
-  }
 
   return (
     <div className="space-y-6">
@@ -181,44 +151,6 @@ INSERT INTO public.categories (name) SELECT DISTINCT category FROM public.books 
         >
           <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
           <span className="font-medium">{successMsg}</span>
-        </div>
-      )}
-
-      {/* Info Banner jika tabel categories belum dibuat di Supabase */}
-      {hasDerivedCategories && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-900 text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-amber-900">
-                Tabel Database Kategori Tersedia di Script SQL
-              </p>
-              <p className="text-xs text-amber-800 mt-0.5">
-                Kategori saat ini dibaca dari buku yang ada di Supabase. Jalankan script{' '}
-                <code className="bg-amber-100/80 px-1.5 py-0.5 rounded font-mono text-amber-900 font-semibold">
-                  supabase_setup.sql
-                </code>{' '}
-                di SQL Editor Supabase untuk mengaktifkan tabel kategori penuh.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={copySqlSnippet}
-            className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs transition cursor-pointer shadow-xs"
-          >
-            {copiedSql ? (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                <span>Tersalin!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Salin SQL Kategori</span>
-              </>
-            )}
-          </button>
         </div>
       )}
 
