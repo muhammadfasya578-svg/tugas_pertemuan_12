@@ -82,7 +82,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin1@perpus.com atau user@perpus.com"
+                  placeholder="nama@email.com"
                   className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 />
               </div>
@@ -139,43 +139,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          {/* Quick Demo Credentials Box */}
-          <div className="mt-6 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1.5 text-slate-600">
-            <p className="font-semibold text-slate-800">Akun Tersedia (Langsung Klik / Ketik):</p>
-            <div className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200">
-              <div>
-                <p className="font-medium text-slate-900">Admin 1</p>
-                <p className="text-slate-600">admin1@perpus.com (adminpassword123)</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('admin1@perpus.com')
-                  setPassword('adminpassword123')
-                }}
-                className="text-emerald-700 hover:text-emerald-800 font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100"
-              >
-                Gunakan
-              </button>
-            </div>
-            <div className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-200">
-              <div>
-                <p className="font-medium text-slate-900">User / Pembaca</p>
-                <p className="text-slate-600">user@perpus.com (userpassword123)</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEmail('user@perpus.com')
-                  setPassword('userpassword123')
-                }}
-                className="text-emerald-700 hover:text-emerald-800 font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100"
-              >
-                Gunakan
-              </button>
-            </div>
-          </div>
 
           {/* Divider */}
           <div className="mt-6 pt-6 border-t border-slate-100 text-center">
