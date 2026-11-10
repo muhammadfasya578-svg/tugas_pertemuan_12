@@ -1,10 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { registerUser } from '@/lib/storage'
-import { BookOpen, User, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
+import {
+  BookOpen,
+  User,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Loader2,
+  Check,
+  Circle,
+  ShieldCheck,
+  CheckCircle2,
+} from 'lucide-react'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -12,9 +25,95 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
   const router = useRouter()
+
+  // Evaluasi kriteria keamanan password
+  const passwordCriteria = useMemo(() => {
+    return [
+      {
+        id: 'length',
+        label: 'Minimal 6 karakter',
+        valid: password.length >= 6,
+      },
+      {
+        id: 'uppercase',
+        label: 'Huruf kapital (A-Z)',
+        valid: /[A-Z]/.test(password),
+      },
+      {
+        id: 'lowercase',
+        label: 'Huruf kecil (a-z)',
+        valid: /[a-z]/.test(password),
+      },
+      {
+        id: 'number',
+        label: 'Angka (0-9)',
+        valid: /[0-9]/.test(password),
+      },
+      {
+        id: 'symbol',
+        label: 'Lambang / simbol khusus',
+        valid: /[^A-Za-z0-9]/.test(password),
+      },
+    ]
+  }, [password])
+
+  // Hitung persentase keamanan (0 - 100%)
+  const passedCriteriaCount = useMemo(() => {
+    return passwordCriteria.filter((c) => c.valid).length
+  }, [passwordCriteria])
+
+  const strengthPercent = useMemo(() => {
+    if (!password) return 0
+    return Math.round((passedCriteriaCount / passwordCriteria.length) * 100)
+  }, [password, passedCriteriaCount, passwordCriteria.length])
+
+  // Status dan palet warna indikator keamanan
+  const strengthInfo = useMemo(() => {
+    if (!password) {
+      return {
+        label: 'Belum diisi',
+        color: 'bg-slate-200',
+        badgeBg: 'bg-slate-100 text-slate-600 border-slate-200',
+      }
+    }
+    if (strengthPercent <= 20) {
+      return {
+        label: 'Sangat Lemah',
+        color: 'bg-red-500',
+        badgeBg: 'bg-red-50 text-red-700 border-red-200',
+      }
+    }
+    if (strengthPercent <= 40) {
+      return {
+        label: 'Lemah',
+        color: 'bg-orange-500',
+        badgeBg: 'bg-orange-50 text-orange-700 border-orange-200',
+      }
+    }
+    if (strengthPercent <= 60) {
+      return {
+        label: 'Cukup',
+        color: 'bg-amber-500',
+        badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
+      }
+    }
+    if (strengthPercent <= 80) {
+      return {
+        label: 'Kuat',
+        color: 'bg-emerald-600',
+        badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      }
+    }
+    return {
+      label: 'Sangat Kuat',
+      color: 'bg-emerald-700',
+      badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+    }
+  }, [password, strengthPercent])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -148,6 +247,64 @@ export default function RegisterPage() {
                   )}
                 </button>
               </div>
+
+              {/* Password Strength Meter & Kriteria */}
+              {password.length > 0 && (
+                <div className="mt-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2.5 transition-all">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+                      <span>Keamanan Password</span>
+                    </span>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${strengthInfo.badgeBg}`}>
+                      {strengthPercent}% • {strengthInfo.label}
+                    </span>
+                  </div>
+
+                  {/* 5-Segment Progress Bar */}
+                  <div
+                    className="grid grid-cols-5 gap-1.5"
+                    role="progressbar"
+                    aria-label="Tingkat keamanan password"
+                    aria-valuenow={strengthPercent}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    {[1, 2, 3, 4, 5].map((segmentIndex) => {
+                      const isFilled = passedCriteriaCount >= segmentIndex
+                      return (
+                        <div
+                          key={segmentIndex}
+                          className={`h-1.5 rounded-full transition-colors duration-300 ${
+                            isFilled ? strengthInfo.color : 'bg-slate-200'
+                          }`}
+                        />
+                      )
+                    })}
+                  </div>
+
+                  {/* Checklist Kriteria Keamanan */}
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1.5 pt-1 text-xs">
+                    {passwordCriteria.map((item) => (
+                      <li
+                        key={item.id}
+                        className={`flex items-center gap-1.5 transition-colors ${
+                          item.valid
+                            ? 'text-emerald-800 font-semibold'
+                            : 'text-slate-500'
+                        }`}
+                      >
+                        {item.valid ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" aria-hidden="true" />
+                        ) : (
+                          <Circle className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" aria-hidden="true" />
+                        )}
+                        <span>{item.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div>
@@ -163,15 +320,44 @@ export default function RegisterPage() {
                 </div>
                 <input
                   id="confirmPassword"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showConfirmPassword ? 'text' : 'password'}
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Ulangi password"
                   minLength={6}
-                  className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                  className="w-full h-11 pl-10 pr-11 text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-700 transition-colors"
+                  aria-label={showConfirmPassword ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" aria-hidden="true" />
+                  ) : (
+                    <Eye className="w-5 h-5" aria-hidden="true" />
+                  )}
+                </button>
               </div>
+
+              {/* Status Kesesuaian Password */}
+              {confirmPassword.length > 0 && (
+                <div className="mt-1.5 text-xs flex items-center gap-1.5">
+                  {password === confirmPassword ? (
+                    <span className="text-emerald-800 font-medium flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" aria-hidden="true" />
+                      <span>Password cocok</span>
+                    </span>
+                  ) : (
+                    <span className="text-red-700 font-medium flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5 text-red-600" aria-hidden="true" />
+                      <span>Konfirmasi password belum cocok</span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <button
