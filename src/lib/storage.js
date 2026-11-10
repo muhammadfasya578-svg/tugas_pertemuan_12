@@ -14,54 +14,26 @@ export function getSupabase() {
   return supabaseInstance
 }
 
-export const INITIAL_BOOKS = [
-  { id: 1, title: 'Laskar Pelangi', author: 'Andrea Hirata', category: 'Novel', stock: 3, cover: '/covers/laskar-pelangi.jpg' },
-  { id: 2, title: 'Bumi Manusia', author: 'Pramoedya A. Toer', category: 'Novel', stock: 2, cover: '/covers/bumi-manusia.jpg' },
-  { id: 3, title: 'Filosofi Teras', author: 'Henry Manampiring', category: 'Self-help', stock: 4, cover: '/covers/filosofi-teras.jpg' },
-  { id: 4, title: 'Atomic Habits', author: 'James Clear', category: 'Self-help', stock: 2, cover: '/covers/atomic-habits.jpg' },
-  { id: 5, title: 'Clean Code', author: 'Robert C. Martin', category: 'Teknologi', stock: 3, cover: '/covers/clean-code.jpg' },
-  { id: 6, title: 'The Pragmatic Programmer', author: 'Andrew Hunt', category: 'Teknologi', stock: 1, cover: '/covers/the-pragmatic-programmer.jpg' },
-  { id: 7, title: 'Sapiens', author: 'Yuval Noah Harari', category: 'Sejarah', stock: 2, cover: '/covers/sapiens.jpg' },
-  { id: 8, title: 'Cantik Itu Luka', author: 'Eka Kurniawan', category: 'Novel', stock: 0, cover: '/covers/cantik-itu-luka.jpg' },
-]
-
 export function resolveBookCover(book) {
-  if (book?.cover && !book.cover.endsWith('.svg') && !book.cover.includes('default-book')) {
+  if (!book) return '/covers/default-book.svg'
+  if (book.cover) {
+    if (book.cover.startsWith('data:') || book.cover.startsWith('http')) {
+      return book.cover
+    }
+    if (book.cover.endsWith('.svg') && !book.cover.includes('default-book')) {
+      return book.cover.replace('.svg', '.jpg')
+    }
     return book.cover
   }
-  const titleMap = {
-    'laskar pelangi': '/covers/laskar-pelangi.jpg',
-    'bumi manusia': '/covers/bumi-manusia.jpg',
-    'filosofi teras': '/covers/filosofi-teras.jpg',
-    'atomic habits': '/covers/atomic-habits.jpg',
-    'clean code': '/covers/clean-code.jpg',
-    'the pragmatic programmer': '/covers/the-pragmatic-programmer.jpg',
-    'sapiens': '/covers/sapiens.jpg',
-    'cantik itu luka': '/covers/cantik-itu-luka.jpg',
-  }
-  const cleanTitle = (book?.title || '').toLowerCase().trim()
-  if (titleMap[cleanTitle]) return titleMap[cleanTitle]
-  return book?.cover || '/covers/default-book.svg'
+  return '/covers/default-book.svg'
 }
-
-export const INITIAL_USERS = [
-  { id: 'usr-1', name: 'Admin Utama', email: 'admin1@perpus.com', password: 'adminpassword123', role: 'admin' },
-  { id: 'usr-2', name: 'Admin Koleksi', email: 'admin2@perpus.com', password: 'adminpassword123', role: 'admin' },
-  { id: 'usr-3', name: 'Admin Sirkulasi', email: 'admin3@perpus.com', password: 'adminpassword123', role: 'admin' },
-  { id: 'usr-4', name: 'Ahmad Fauzi', email: 'user@perpus.com', password: 'userpassword123', role: 'user' },
-]
-
-export const INITIAL_LOANS = []
 
 export function initLocalStorage() {
   if (typeof window === 'undefined') return
-}
-
-export function resetToDefaultSeed() {
-  if (typeof window === 'undefined') return
-  localStorage.removeItem('perpus_books')
-  localStorage.removeItem('perpus_loans')
-  return true
+  try {
+    localStorage.removeItem('perpus_books')
+    localStorage.removeItem('perpus_loans')
+  } catch {}
 }
 
 export function getSession() {
@@ -213,73 +185,60 @@ export async function registerUser(name, email, password) {
 
 export async function fetchBooks() {
   const supabase = getSupabase()
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('books')
-        .select('*')
-        .order('id', { ascending: true })
+  if (!supabase) return []
 
-      if (!error && data && data.length > 0) {
-        const withCovers = data.map((b) => ({ ...b, cover: resolveBookCover(b) }))
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('perpus_books', JSON.stringify(withCovers))
-        }
-        return withCovers
-      }
-    } catch {}
-  }
+  try {
+    const { data, error } = await supabase
+      .from('books')
+      .select('*')
+      .order('id', { ascending: true })
 
-  if (typeof window !== 'undefined') {
-    const cached = localStorage.getItem('perpus_books')
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached)
-        return parsed.map((b) => ({ ...b, cover: resolveBookCover(b) }))
-      } catch {}
+    if (error) {
+      console.error('Gagal mengambil buku dari database Supabase:', error.message)
+      return []
     }
-  }
 
-  return INITIAL_BOOKS.map((b) => ({ ...b, cover: resolveBookCover(b) }))
+    return (data || []).map((b) => ({
+      ...b,
+      cover: resolveBookCover(b),
+    }))
+  } catch (err) {
+    console.error('Koneksi Supabase error saat fetchBooks:', err)
+    return []
+  }
 }
 
 export function getBooks() {
-  if (typeof window !== 'undefined') {
-    const cached = localStorage.getItem('perpus_books')
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached)
-        return parsed.map((b) => ({ ...b, cover: resolveBookCover(b) }))
-      } catch {}
-    }
-  }
-  return INITIAL_BOOKS.map((b) => ({ ...b, cover: resolveBookCover(b) }))
+  return []
 }
 
 export async function fetchBookById(id) {
   const supabase = getSupabase()
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('books')
-        .select('*')
-        .eq('id', Number(id))
-        .single()
+  if (!supabase) return null
 
-      if (!error && data) {
-        return { ...data, cover: resolveBookCover(data) }
-      }
-    } catch {}
+  try {
+    const { data, error } = await supabase
+      .from('books')
+      .select('*')
+      .eq('id', Number(id))
+      .maybeSingle()
+
+    if (error || !data) {
+      return null
+    }
+
+    return {
+      ...data,
+      cover: resolveBookCover(data),
+    }
+  } catch (err) {
+    console.error('Koneksi Supabase error saat fetchBookById:', err)
+    return null
   }
-
-  const books = await fetchBooks()
-  const found = books.find((b) => Number(b.id) === Number(id))
-  return found ? { ...found, cover: resolveBookCover(found) } : null
 }
 
 export function getBookById(id) {
-  const books = getBooks()
-  return books.find((b) => Number(b.id) === Number(id)) || null
+  return null
 }
 
 export async function addBook({ title, author, category, stock, cover }) {
@@ -363,43 +322,40 @@ export async function deleteBookData(id) {
 
 export async function fetchLoans(userId = null) {
   const supabase = getSupabase()
-  if (supabase) {
-    try {
-      let query = supabase
-        .from('loans')
-        .select('*, book:books(*), user:profiles(*)')
-        .order('created_at', { ascending: false })
+  if (!supabase) return []
 
-      if (userId) {
-        query = query.eq('user_id', userId)
-      }
+  try {
+    let query = supabase
+      .from('loans')
+      .select('*, book:books(*), user:profiles(*)')
+      .order('created_at', { ascending: false })
 
-      const { data, error } = await query
-      if (!error && data) {
-        return data.map((l) => ({
-          ...l,
-          userName: l.user?.name || 'User',
-          userEmail: l.user?.email || '-',
-          bookTitle: l.book?.title || 'Buku dihapus',
-          bookCategory: l.book?.category || '-',
-        }))
-      }
-    } catch {}
+    if (userId) {
+      query = query.eq('user_id', userId)
+    }
+
+    const { data, error } = await query
+    if (error) {
+      console.error('Gagal mengambil data peminjaman dari Supabase:', error.message)
+      return []
+    }
+
+    return (data || []).map((l) => ({
+      ...l,
+      userName: l.user?.name || 'User',
+      userEmail: l.user?.email || '-',
+      bookTitle: l.book?.title || 'Buku dihapus',
+      bookCategory: l.book?.category || '-',
+      bookCover: l.book ? resolveBookCover(l.book) : '/covers/default-book.svg',
+    }))
+  } catch (err) {
+    console.error('Koneksi Supabase error saat fetchLoans:', err)
+    return []
   }
-
-  return []
 }
 
 export function getLoans() {
-  if (typeof window !== 'undefined') {
-    const cached = localStorage.getItem('perpus_loans')
-    if (cached) {
-      try {
-        return JSON.parse(cached)
-      } catch {}
-    }
-  }
-  return INITIAL_LOANS
+  return []
 }
 
 export async function borrowBookData(bookId, user) {

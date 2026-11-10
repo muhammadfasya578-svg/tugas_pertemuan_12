@@ -3,14 +3,11 @@
 import { useState, useEffect } from 'react'
 import AppSidebar from '@/components/AppSidebar'
 import CatalogView from '@/components/CatalogView'
-import { fetchBooks, getBooks, getSession, syncSessionFromSupabase } from '@/lib/storage'
+import { fetchBooks, getSession, syncSessionFromSupabase } from '@/lib/storage'
 import { Loader2 } from 'lucide-react'
 
 export default function HomePage() {
-  const [books, setBooks] = useState(() => {
-    if (typeof window === 'undefined') return []
-    return getBooks()
-  })
+  const [books, setBooks] = useState([])
   const [profile, setProfile] = useState(() => {
     if (typeof window === 'undefined') return null
     return getSession()
