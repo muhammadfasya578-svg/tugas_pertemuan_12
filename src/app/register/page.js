@@ -76,42 +76,42 @@ export default function RegisterPage() {
     if (!password) {
       return {
         label: 'Belum diisi',
-        color: 'bg-slate-200',
-        badgeBg: 'bg-slate-100 text-slate-600 border-slate-200',
+        barColor: 'bg-slate-200',
+        textColor: 'text-slate-500',
       }
     }
     if (strengthPercent <= 20) {
       return {
         label: 'Sangat Lemah',
-        color: 'bg-red-500',
-        badgeBg: 'bg-red-50 text-red-700 border-red-200',
+        barColor: 'bg-red-500',
+        textColor: 'text-red-600',
       }
     }
     if (strengthPercent <= 40) {
       return {
         label: 'Lemah',
-        color: 'bg-orange-500',
-        badgeBg: 'bg-orange-50 text-orange-700 border-orange-200',
+        barColor: 'bg-orange-500',
+        textColor: 'text-orange-600',
       }
     }
     if (strengthPercent <= 60) {
       return {
         label: 'Cukup',
-        color: 'bg-amber-500',
-        badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
+        barColor: 'bg-amber-500',
+        textColor: 'text-amber-600',
       }
     }
     if (strengthPercent <= 80) {
       return {
         label: 'Kuat',
-        color: 'bg-emerald-600',
-        badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        barColor: 'bg-emerald-600',
+        textColor: 'text-emerald-700',
       }
     }
     return {
       label: 'Sangat Kuat',
-      color: 'bg-emerald-700',
-      badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+      barColor: 'bg-emerald-700',
+      textColor: 'text-emerald-800',
     }
   }, [password, strengthPercent])
 
@@ -248,61 +248,51 @@ export default function RegisterPage() {
                 </button>
               </div>
 
-              {/* Password Strength Meter & Kriteria */}
+              {/* Password Strength Indicator - Simple & Smooth */}
               {password.length > 0 && (
-                <div className="mt-2.5 p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2.5 transition-all">
+                <div className="mt-2 space-y-2">
+                  {/* Status & Persentase Baris */}
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-700" aria-hidden="true" />
-                      <span>Keamanan Password</span>
-                    </span>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${strengthInfo.badgeBg}`}>
-                      {strengthPercent}% • {strengthInfo.label}
+                    <span className="text-slate-500">Kekuatan password:</span>
+                    <span className={`font-semibold transition-colors duration-300 ${strengthInfo.textColor}`}>
+                      {strengthPercent}% &bull; {strengthInfo.label}
                     </span>
                   </div>
 
-                  {/* 5-Segment Progress Bar */}
+                  {/* Smooth Continuous Progress Bar */}
                   <div
-                    className="grid grid-cols-5 gap-1.5"
+                    className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden"
                     role="progressbar"
                     aria-label="Tingkat keamanan password"
                     aria-valuenow={strengthPercent}
                     aria-valuemin={0}
                     aria-valuemax={100}
                   >
-                    {[1, 2, 3, 4, 5].map((segmentIndex) => {
-                      const isFilled = passedCriteriaCount >= segmentIndex
-                      return (
-                        <div
-                          key={segmentIndex}
-                          className={`h-1.5 rounded-full transition-colors duration-300 ${
-                            isFilled ? strengthInfo.color : 'bg-slate-200'
-                          }`}
-                        />
-                      )
-                    })}
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ease-out ${strengthInfo.barColor}`}
+                      style={{ width: `${strengthPercent}%` }}
+                    />
                   </div>
 
-                  {/* Checklist Kriteria Keamanan */}
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-2 gap-y-1.5 pt-1 text-xs">
+                  {/* Kriteria Syarat Minimalis */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-0.5 text-[11px]">
                     {passwordCriteria.map((item) => (
-                      <li
+                      <span
                         key={item.id}
-                        className={`flex items-center gap-1.5 transition-colors ${
-                          item.valid
-                            ? 'text-emerald-800 font-semibold'
-                            : 'text-slate-500'
+                        className={`flex items-center gap-1.5 transition-colors duration-300 ${
+                          item.valid ? 'text-emerald-800 font-medium' : 'text-slate-600'
                         }`}
                       >
-                        {item.valid ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" aria-hidden="true" />
-                        ) : (
-                          <Circle className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" aria-hidden="true" />
-                        )}
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                            item.valid ? 'bg-emerald-600' : 'bg-slate-300'
+                          }`}
+                          aria-hidden="true"
+                        />
                         <span>{item.label}</span>
-                      </li>
+                      </span>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
             </div>
