@@ -12,6 +12,8 @@ import {
   ArrowLeft,
   LogOut,
   ShieldCheck,
+  BookPlus,
+  History,
 } from 'lucide-react'
 import { clearSession } from '@/lib/storage'
 
@@ -25,6 +27,8 @@ export default function AdminSidebar({ profile }) {
     { href: '/admin/kategori', label: 'Kelola Kategori', icon: Tags },
     { href: '/admin/peminjaman', label: 'Peminjaman', icon: ClipboardList },
     { href: '/admin/user', label: 'Daftar User', icon: Users },
+    { href: '/admin/usulan', label: 'Usulan Buku', icon: BookPlus },
+    { href: '/admin/log', label: 'Log Aktivitas', icon: History },
   ]
 
   const handleLogout = () => {

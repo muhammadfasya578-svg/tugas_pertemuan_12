@@ -15,6 +15,7 @@ import {
   X,
   BookOpen,
   Heart,
+  CreditCard,
 } from 'lucide-react'
 import { clearSession } from '@/lib/storage'
 
@@ -67,6 +68,13 @@ export default function AppSidebar({ profile }) {
       sublabel: 'Buku Disimpan',
       icon: Heart,
       isActive: false,
+    },
+    {
+      href: '/kartu-anggota',
+      label: 'Member Card',
+      sublabel: 'Kartu Anggota',
+      icon: CreditCard,
+      isActive: pathname === '/kartu-anggota',
     },
   ]
 

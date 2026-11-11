@@ -62,6 +62,19 @@ create table if not exists public.reviews (
   created_at timestamptz not null default now()
 );
 
+-- 4D. TABEL USULAN BUKU OLEH PENGGUNA (BOOK REQUESTS)
+create table if not exists public.book_requests (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  title text not null,
+  author text not null,
+  category text,
+  reason text,
+  status text not null default 'menunggu' check (status in ('menunggu', 'disetujui', 'ditolak')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz
+);
+
 -- 5. FUNCTION & TRIGGER BUAT PROFIL OTOMATIS SAAT REGISTER
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -165,6 +178,25 @@ create policy "reviews: insert review sendiri" on public.reviews
 
 drop policy if exists "reviews: delete review sendiri atau admin" on public.reviews;
 create policy "reviews: delete review sendiri atau admin" on public.reviews
+  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
+-- Policies for book_requests
+alter table public.book_requests enable row level security;
+
+drop policy if exists "book_requests: baca sendiri atau admin" on public.book_requests;
+create policy "book_requests: baca sendiri atau admin" on public.book_requests
+  for select to authenticated using (user_id = auth.uid() or public.is_admin());
+
+drop policy if exists "book_requests: user insert usulan sendiri" on public.book_requests;
+create policy "book_requests: user insert usulan sendiri" on public.book_requests
+  for insert to authenticated with check (user_id = auth.uid());
+
+drop policy if exists "book_requests: admin update status" on public.book_requests;
+create policy "book_requests: admin update status" on public.book_requests
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
+
+drop policy if exists "book_requests: admin atau pemilik delete" on public.book_requests;
+create policy "book_requests: admin atau pemilik delete" on public.book_requests
   for delete to authenticated using (user_id = auth.uid() or public.is_admin());
 
 -- 8. RPC: PINJAM BUKU

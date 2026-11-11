@@ -1044,3 +1044,303 @@ export function exportToCSV(filename, headers, rows) {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 }
+
+// ========================================================
+// 8. USULAN BUKU BARU (BOOK REQUESTS)
+// ========================================================
+
+export async function fetchBookRequests(userId = null) {
+  const supabase = getSupabase()
+  if (supabase) {
+    try {
+      let query = supabase
+        .from('book_requests')
+        .select('*, user:profiles(name, email)')
+        .order('created_at', { ascending: false })
+
+      if (userId) {
+        query = query.eq('user_id', userId)
+      }
+
+      const { data, error } = await query
+      if (!error && data) {
+        return data.map((r) => ({
+          ...r,
+          userName: r.user?.name || 'Pengguna',
+          userEmail: r.user?.email || '-',
+        }))
+      }
+    } catch {}
+  }
+
+  // Fallback lokal jika tabel belum ada
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('perpus_book_requests')
+      const list = raw ? JSON.parse(raw) : []
+      if (userId) {
+        return list.filter((r) => r.user_id === userId)
+      }
+      return list
+    } catch {
+      return []
+    }
+  }
+
+  return []
+}
+
+export async function createBookRequest({ title, author, category, reason, user }) {
+  if (!user?.id) return { error: 'Harus login untuk mengusulkan buku' }
+  if (!title?.trim() || !author?.trim()) {
+    return { error: 'Judul dan Penulis buku wajib diisi' }
+  }
+
+  const cleanTitle = title.trim()
+  const cleanAuthor = author.trim()
+  const cleanCategory = category?.trim() || 'Umum'
+  const cleanReason = reason?.trim() || ''
+
+  const supabase = getSupabase()
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('book_requests')
+        .insert({
+          user_id: user.id,
+          title: cleanTitle,
+          author: cleanAuthor,
+          category: cleanCategory,
+          reason: cleanReason,
+          status: 'menunggu',
+        })
+        .select('*, user:profiles(name, email)')
+        .single()
+
+      if (!error && data) {
+        recordActivityLog({
+          type: 'usulan',
+          actor: user.name || user.email,
+          description: `Mengajukan usulan buku "${cleanTitle}" oleh ${cleanAuthor}`,
+        })
+
+        return {
+          success: true,
+          request: {
+            ...data,
+            userName: data.user?.name || user.name || 'Pengguna',
+            userEmail: data.user?.email || user.email || '-',
+          },
+        }
+      }
+    } catch {}
+  }
+
+  // Simpan ke fallback lokal
+  if (typeof window !== 'undefined') {
+    try {
+      const newReq = {
+        id: Date.now(),
+        user_id: user.id,
+        title: cleanTitle,
+        author: cleanAuthor,
+        category: cleanCategory,
+        reason: cleanReason,
+        status: 'menunggu',
+        created_at: new Date().toISOString(),
+        userName: user.name || 'Pengguna',
+        userEmail: user.email || user.email || '-',
+      }
+      const raw = localStorage.getItem('perpus_book_requests')
+      const list = raw ? JSON.parse(raw) : []
+      list.unshift(newReq)
+      localStorage.setItem('perpus_book_requests', JSON.stringify(list))
+
+      recordActivityLog({
+        type: 'usulan',
+        actor: user.name || user.email,
+        description: `Mengajukan usulan buku "${cleanTitle}" oleh ${cleanAuthor}`,
+      })
+
+      return { success: true, request: newReq }
+    } catch (e) {
+      return { error: e.message }
+    }
+  }
+
+  return { error: 'Gagal menyimpan usulan buku' }
+}
+
+export async function updateBookRequestStatus(requestId, status, user = null) {
+  const supabase = getSupabase()
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('book_requests')
+        .update({
+          status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', requestId)
+
+      if (!error) {
+        recordActivityLog({
+          type: 'usulan',
+          actor: user?.name || 'Admin',
+          description: `Memperbarui status usulan #${requestId} menjadi "${status}"`,
+        })
+        return { success: true }
+      }
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('perpus_book_requests')
+      const list = raw ? JSON.parse(raw) : []
+      const updated = list.map((r) =>
+        r.id === requestId
+          ? { ...r, status, updated_at: new Date().toISOString() }
+          : r
+      )
+      localStorage.setItem('perpus_book_requests', JSON.stringify(updated))
+
+      recordActivityLog({
+        type: 'usulan',
+        actor: user?.name || 'Admin',
+        description: `Memperbarui status usulan #${requestId} menjadi "${status}"`,
+      })
+      return { success: true }
+    } catch (e) {
+      return { error: e.message }
+    }
+  }
+
+  return { error: 'Gagal memperbarui status usulan' }
+}
+
+export async function deleteBookRequest(requestId) {
+  const supabase = getSupabase()
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('book_requests')
+        .delete()
+        .eq('id', requestId)
+      if (!error) return { success: true }
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('perpus_book_requests')
+      const list = raw ? JSON.parse(raw) : []
+      const filtered = list.filter((r) => r.id !== requestId)
+      localStorage.setItem('perpus_book_requests', JSON.stringify(filtered))
+      return { success: true }
+    } catch (e) {
+      return { error: e.message }
+    }
+  }
+
+  return { error: 'Gagal menghapus usulan' }
+}
+
+// ========================================================
+// 9. LOG AKTIVITAS SISTEM (AUDIT TRAIL)
+// ========================================================
+
+export function recordActivityLog({ type, actor, description }) {
+  if (typeof window === 'undefined') return
+  try {
+    const raw = localStorage.getItem('perpus_activity_logs')
+    const list = raw ? JSON.parse(raw) : []
+    const newEntry = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      type: type || 'sistem',
+      actor: actor || 'Sistem',
+      description,
+      timestamp: new Date().toISOString(),
+    }
+    list.unshift(newEntry)
+    // Simpan maksimal 100 log terbaru
+    if (list.length > 100) list.length = 100
+    localStorage.setItem('perpus_activity_logs', JSON.stringify(list))
+  } catch {}
+}
+
+export async function fetchActivityLogs() {
+  const aggregated = []
+
+  // Ambil log tersimpan dari localStorage
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem('perpus_activity_logs')
+      if (raw) {
+        aggregated.push(...JSON.parse(raw))
+      }
+    } catch {}
+  }
+
+  // Agregasi log real-time dari data peminjaman Supabase
+  try {
+    const loans = await fetchLoans()
+    loans.forEach((loan) => {
+      // Log pinjam
+      if (loan.created_at) {
+        aggregated.push({
+          id: `loan-borrow-${loan.id}`,
+          type: 'pinjam',
+          actor: loan.userName || 'Pengguna',
+          description: `Meminjam buku "${loan.bookTitle}" (ID Pinjam: #${loan.id})`,
+          timestamp: loan.created_at,
+        })
+      }
+      // Log kembali
+      if (loan.status === 'dikembalikan' && loan.returned_at) {
+        aggregated.push({
+          id: `loan-return-${loan.id}`,
+          type: 'kembali',
+          actor: loan.userName || 'Pengguna',
+          description: `Mengembalikan buku "${loan.bookTitle}" (ID Pinjam: #${loan.id})`,
+          timestamp: loan.returned_at,
+        })
+      }
+    })
+  } catch {}
+
+  // Agregasi usulan buku
+  try {
+    const requests = await fetchBookRequests()
+    requests.forEach((req) => {
+      aggregated.push({
+        id: `req-${req.id}`,
+        type: 'usulan',
+        actor: req.userName || 'Pengguna',
+        description: `Mengusulkan buku baru: "${req.title}" karya ${req.author}`,
+        timestamp: req.created_at,
+      })
+    })
+  } catch {}
+
+  // Hilangkan duplikasi ID dan urutkan dari yang terbaru
+  const seenIds = new Set()
+  const uniqueLogs = []
+  for (const item of aggregated) {
+    if (!seenIds.has(item.id)) {
+      seenIds.add(item.id)
+      uniqueLogs.push(item)
+    }
+  }
+
+  return uniqueLogs.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  )
+}
+
+// Format ID Anggota Unik (Contoh: LIB-2026-9A82)
+export function formatMemberId(user) {
+  if (!user?.id) return 'LIB-2026-0001'
+  const idClean = user.id.replace(/-/g, '').slice(0, 6).toUpperCase()
+  return `LIB-2026-${idClean}`
+}

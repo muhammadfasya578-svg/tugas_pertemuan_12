@@ -5,9 +5,20 @@ import Link from 'next/link'
 import BookCard from '@/components/BookCard'
 import Dropdown from '@/components/Dropdown'
 import LoanAlertBanner from '@/components/LoanAlertBanner'
+import NotificationCenter from '@/components/NotificationCenter'
+import BookRequestModal from '@/components/BookRequestModal'
 import { useDialog } from '@/components/DialogContext'
 import { resolveBookCover, fetchFavorites, toggleFavorite } from '@/lib/storage'
-import { Search, BookX, X, ArrowRight, Bookmark } from 'lucide-react'
+import {
+  Search,
+  BookX,
+  X,
+  ArrowRight,
+  Bookmark,
+  BookPlus,
+  ArrowUpDown,
+  CheckCircle2,
+} from 'lucide-react'
 
 export default function CatalogView({ initialBooks, initialCategories = [], user = null }) {
   const { confirm, alert, toast } = useDialog()
@@ -15,6 +26,9 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
   const [selectedCategory, setSelectedCategory] = useState('Semua')
   const [favoriteIds, setFavoriteIds] = useState([])
   const [onlyFavorites, setOnlyFavorites] = useState(false)
+  const [sortBy, setSortBy] = useState('terbaru')
+  const [onlyAvailable, setOnlyAvailable] = useState(false)
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -86,9 +100,17 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
     }))
   }, [categories])
 
-  // Filter buku berdasarkan search query, kategori terpilih, dan filter favorit
+  const sortOptions = [
+    { value: 'terbaru', label: 'Urut: Terbaru' },
+    { value: 'populer', label: 'Urut: Populer' },
+    { value: 'stok', label: 'Urut: Stok Terbanyak' },
+    { value: 'az', label: 'Urut: Judul A - Z' },
+    { value: 'za', label: 'Urut: Judul Z - A' },
+  ]
+
+  // Filter buku berdasarkan search query, kategori, favorit, ketersediaan, dan sorting
   const filteredBooks = useMemo(() => {
-    return initialBooks.filter((book) => {
+    let result = initialBooks.filter((book) => {
       const matchSearch =
         book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         book.author.toLowerCase().includes(searchQuery.toLowerCase())
@@ -97,10 +119,31 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
         selectedCategory === 'Semua' || book.category === selectedCategory
 
       const matchFavorite = !onlyFavorites || favoriteIds.includes(Number(book.id))
+      const matchAvailable = !onlyAvailable || Number(book.stock) > 0
 
-      return matchSearch && matchCategory && matchFavorite
+      return matchSearch && matchCategory && matchFavorite && matchAvailable
     })
-  }, [initialBooks, searchQuery, selectedCategory, onlyFavorites, favoriteIds])
+
+    if (sortBy === 'stok') {
+      result.sort((a, b) => Number(b.stock) - Number(a.stock))
+    } else if (sortBy === 'az') {
+      result.sort((a, b) => a.title.localeCompare(b.title))
+    } else if (sortBy === 'za') {
+      result.sort((a, b) => b.title.localeCompare(a.title))
+    } else {
+      result.sort((a, b) => Number(b.id) - Number(a.id))
+    }
+
+    return result
+  }, [
+    initialBooks,
+    searchQuery,
+    selectedCategory,
+    onlyFavorites,
+    favoriteIds,
+    onlyAvailable,
+    sortBy,
+  ])
 
   // Buku rekomendasi terpopuler / tersedia untuk rak atas
   const recommendedBooks = useMemo(() => {
@@ -108,25 +151,47 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
   }, [initialBooks])
 
   const isFiltering =
-    searchQuery.trim().length > 0 || selectedCategory !== 'Semua' || onlyFavorites
+    searchQuery.trim().length > 0 ||
+    selectedCategory !== 'Semua' ||
+    onlyFavorites ||
+    onlyAvailable ||
+    sortBy !== 'terbaru'
 
   return (
     <div className="space-y-10">
       {/* Due Date Alert Banner if user has active loans */}
       {user?.id && <LoanAlertBanner userId={user.id} />}
 
-      {/* Top Header: Discover Title & Search Bar */}
+      {/* Top Header: Discover Title, Notifications, Request & Search Bar */}
       <section
         aria-label="Pencarian dan penjelajahan buku"
         className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 pb-2"
       >
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-            Jelajahi Buku
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Temukan dan pinjam bacaan favoritmu dari koleksi perpustakaan.
-          </p>
+        <div className="flex items-center justify-between w-full lg:w-auto">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+              Jelajahi Buku
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Temukan dan pinjam bacaan favoritmu dari koleksi perpustakaan.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <NotificationCenter user={user} />
+
+            {user && (
+              <button
+                type="button"
+                onClick={() => setIsRequestModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50/40 text-xs font-semibold shadow-2xs transition cursor-pointer"
+                title="Usulkan Buku Baru"
+              >
+                <BookPlus className="w-4 h-4 text-emerald-600" />
+                <span className="hidden sm:inline">Usul Buku</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Unified Search Pill (Category Dropdown + Search Input + Button) */}
@@ -310,6 +375,53 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
           )}
         </div>
 
+        {/* Secondary Filter & Sort Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Sort Dropdown */}
+            <Dropdown
+              options={sortOptions}
+              value={sortBy}
+              onChange={(val) => setSortBy(val)}
+              className="w-44 text-xs"
+            />
+
+            {/* Availability Filter Toggle */}
+            <button
+              type="button"
+              onClick={() => setOnlyAvailable(!onlyAvailable)}
+              className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                onlyAvailable
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold'
+                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-slate-200'
+              }`}
+            >
+              <CheckCircle2
+                className={`w-3.5 h-3.5 ${
+                  onlyAvailable ? 'text-emerald-700' : 'text-slate-400'
+                }`}
+              />
+              <span>Hanya yang Tersedia</span>
+            </button>
+          </div>
+
+          {isFiltering && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('')
+                setSelectedCategory('Semua')
+                setOnlyFavorites(false)
+                setOnlyAvailable(false)
+                setSortBy('terbaru')
+              }}
+              className="text-xs font-semibold text-slate-500 hover:text-red-600 transition cursor-pointer"
+            >
+              Reset Semua Filter
+            </button>
+          )}
+        </div>
+
         {/* Books Grid */}
         {filteredBooks.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
@@ -333,7 +445,7 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
             <p className="text-xs text-slate-600 mt-1 leading-relaxed">
               {onlyFavorites
                 ? 'Klik ikon bookmark pada kartu buku untuk menyimpan buku favorit Anda di sini.'
-                : 'Tidak ada buku yang cocok dengan kata kunci atau kategori yang dipilih.'}
+                : 'Tidak ada buku yang cocok dengan kata kunci atau filter yang dipilih.'}
             </p>
             {isFiltering && (
               <button
@@ -342,6 +454,8 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
                   setSearchQuery('')
                   setSelectedCategory('Semua')
                   setOnlyFavorites(false)
+                  setOnlyAvailable(false)
+                  setSortBy('terbaru')
                 }}
                 className="mt-4 min-h-[40px] px-4 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100 transition-colors cursor-pointer"
               >
@@ -351,6 +465,14 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
           </div>
         )}
       </section>
+
+      {/* Book Request Modal */}
+      <BookRequestModal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+        user={user}
+        categories={categories}
+      />
     </div>
   )
 }

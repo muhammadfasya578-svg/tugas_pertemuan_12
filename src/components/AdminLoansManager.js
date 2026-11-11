@@ -11,6 +11,7 @@ import {
   exportToCSV,
 } from '@/lib/storage'
 import StatusBadge from '@/components/StatusBadge'
+import LoanReceiptModal from '@/components/LoanReceiptModal'
 import { formatDate, formatRupiah, calculateLateFine } from '@/lib/utils'
 import {
   Search,
@@ -24,6 +25,7 @@ import {
 
 export default function AdminLoansManager() {
   const { confirm, alert, toast } = useDialog()
+  const [selectedReceiptLoan, setSelectedReceiptLoan] = useState(null)
   const [loans, setLoans] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -341,35 +343,47 @@ export default function AdminLoansManager() {
                         />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right print:hidden">
-                        {loan.status === 'dipinjam' ? (
-                          <div className="inline-flex items-center gap-2 justify-end">
-                            {canExtend && (
+                        <div className="inline-flex items-center gap-1.5 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReceiptLoan(loan)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
+                            title="Cetak resi peminjaman resmi"
+                          >
+                            <Printer className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Resi</span>
+                          </button>
+
+                          {loan.status === 'dipinjam' ? (
+                            <>
+                              {canExtend && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleExtend(loan.id)}
+                                  disabled={processingId === loan.id}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
+                                  title="Perpanjang batas peminjaman 7 hari"
+                                >
+                                  <CalendarPlus className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <span>Perpanjang</span>
+                                </button>
+                              )}
                               <button
                                 type="button"
-                                onClick={() => handleExtend(loan.id)}
+                                onClick={() => handleReturn(loan.id)}
                                 disabled={processingId === loan.id}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
-                                title="Perpanjang batas peminjaman 7 hari"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-800 active:bg-emerald-900 transition cursor-pointer"
                               >
-                                <CalendarPlus className="w-3.5 h-3.5" aria-hidden="true" />
-                                <span>Perpanjang</span>
+                                <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                                <span>Kembalikan</span>
                               </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleReturn(loan.id)}
-                              disabled={processingId === loan.id}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-700 text-white hover:bg-emerald-800 active:bg-emerald-900 transition cursor-pointer"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
-                              <span>Kembalikan</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-500 font-medium">
-                            {loan.returned_at ? `Dikembalikan ${formatDate(loan.returned_at)}` : 'Selesai'}
-                          </span>
-                        )}
+                            </>
+                          ) : (
+                            <span className="text-xs text-slate-500 font-medium px-2 py-1 bg-slate-100 rounded-lg">
+                              {loan.returned_at ? `Kembali ${formatDate(loan.returned_at)}` : 'Selesai'}
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -385,6 +399,12 @@ export default function AdminLoansManager() {
           </table>
         </div>
       </div>
+
+      {/* Loan Receipt Modal */}
+      <LoanReceiptModal
+        loan={selectedReceiptLoan}
+        onClose={() => setSelectedReceiptLoan(null)}
+      />
     </div>
   )
 }
