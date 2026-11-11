@@ -14,25 +14,42 @@ export function proxy(request) {
   const pathname = request.nextUrl.pathname
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register')
 
+  const sanitizeResponse = (res) => {
+    if (session && (session.avatar_url || (sessionCookie?.value && sessionCookie.value.length > 1000))) {
+      const cleanSession = {
+        id: session.id,
+        email: session.email,
+        name: session.name,
+        role: session.role,
+      }
+      res.cookies.set('perpus_session', encodeURIComponent(JSON.stringify(cleanSession)), {
+        path: '/',
+        maxAge: 86400,
+        sameSite: 'lax',
+      })
+    }
+    return res
+  }
+
   if (!session && !isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    return sanitizeResponse(NextResponse.redirect(url))
   }
 
   if (session && isAuthRoute) {
     const url = request.nextUrl.clone()
     url.pathname = session.role === 'admin' ? '/admin' : '/'
-    return NextResponse.redirect(url)
+    return sanitizeResponse(NextResponse.redirect(url))
   }
 
   if (session && pathname.startsWith('/admin') && session.role !== 'admin') {
     const url = request.nextUrl.clone()
     url.pathname = '/'
-    return NextResponse.redirect(url)
+    return sanitizeResponse(NextResponse.redirect(url))
   }
 
-  return NextResponse.next()
+  return sanitizeResponse(NextResponse.next())
 }
 
 export const config = {

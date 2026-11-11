@@ -49,6 +49,26 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="id" className={`${plusJakartaSans.variable} font-sans antialiased`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var m = document.cookie.match(/(?:^|; )perpus_session=([^;]+)/);
+                if (m && m[1]) {
+                  var v = decodeURIComponent(m[1]);
+                  if (v.length > 1000 || v.indexOf('data:image') !== -1) {
+                    var u = JSON.parse(v);
+                    document.cookie = 'perpus_session=' + encodeURIComponent(JSON.stringify({
+                      id: u.id, email: u.email, name: u.name, role: u.role
+                    })) + '; path=/; max-age=86400; SameSite=Lax';
+                  }
+                }
+              } catch(e) {}
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
         <DialogProvider>
           {children}

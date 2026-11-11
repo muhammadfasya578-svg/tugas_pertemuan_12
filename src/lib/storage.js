@@ -50,7 +50,16 @@ export function getSession() {
 export function setSession(user) {
   if (typeof window === 'undefined') return
   localStorage.setItem('perpus_session', JSON.stringify(user))
-  document.cookie = `perpus_session=${encodeURIComponent(JSON.stringify(user))}; path=/; max-age=86400`
+
+  // Cookie hanya untuk middleware/proxy Next.js (hanya field identitas kecil)
+  // Jangan pernah menaruh Base64 avatar di cookie agar tidak terkena HTTP 431 (Header Too Large)
+  const cookieSafeUser = {
+    id: user?.id,
+    email: user?.email,
+    name: user?.name,
+    role: user?.role,
+  }
+  document.cookie = `perpus_session=${encodeURIComponent(JSON.stringify(cookieSafeUser))}; path=/; max-age=86400; SameSite=Lax`
 }
 
 export function clearSession() {
