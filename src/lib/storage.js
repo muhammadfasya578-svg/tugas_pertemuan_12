@@ -340,14 +340,26 @@ export async function fetchLoans(userId = null) {
       return []
     }
 
-    return (data || []).map((l) => ({
-      ...l,
-      userName: l.user?.name || 'User',
-      userEmail: l.user?.email || '-',
-      bookTitle: l.book?.title || 'Buku dihapus',
-      bookCategory: l.book?.category || '-',
-      bookCover: l.book ? resolveBookCover(l.book) : '/covers/default-book.svg',
-    }))
+    return (data || []).map((l) => {
+      const isRenewed =
+        Boolean(l.renewed) ||
+        (typeof window !== 'undefined' &&
+          localStorage.getItem(`perpus_renewed_${l.id}`) === 'true') ||
+        (l.created_at &&
+          l.due_date &&
+          new Date(l.due_date).getTime() - new Date(l.created_at).getTime() >
+            8 * 24 * 60 * 60 * 1000)
+
+      return {
+        ...l,
+        renewed: isRenewed,
+        userName: l.user?.name || 'User',
+        userEmail: l.user?.email || '-',
+        bookTitle: l.book?.title || 'Buku dihapus',
+        bookCategory: l.book?.category || '-',
+        bookCover: l.book ? resolveBookCover(l.book) : '/covers/default-book.svg',
+      }
+    })
   } catch (err) {
     console.error('Koneksi Supabase error saat fetchLoans:', err)
     return []
@@ -697,48 +709,101 @@ export async function extendLoanData(loanId, user) {
   if (!supabase) return { error: 'Koneksi Supabase tidak aktif' }
 
   try {
-    const { error } = await supabase.rpc('extend_loan', {
+    // 1. Coba panggil RPC jika sudah dibuat di Supabase
+    const { error: rpcError } = await supabase.rpc('extend_loan', {
       p_loan_id: Number(loanId),
     })
 
-    if (error) {
-      if (error.code === 'PGRST202' || error.message?.includes('function public.extend_loan') || error.message?.includes('does not exist')) {
-        const { data: loan, error: fetchErr } = await supabase
-          .from('loans')
-          .select('*')
-          .eq('id', Number(loanId))
-          .single()
-
-        if (fetchErr || !loan) {
-          return { error: 'Peminjaman tidak ditemukan' }
-        }
-
-        if (loan.status !== 'dipinjam') {
-          return { error: 'Buku sudah dikembalikan' }
-        }
-
-        if (loan.renewed) {
-          return { error: 'Peminjaman sudah pernah diperpanjang sebelumnya' }
-        }
-
-        if (new Date(loan.due_date).getTime() < Date.now()) {
-          return { error: 'Buku sudah melewati jatuh tempo, tidak dapat diperpanjang' }
-        }
-
-        const newDueDate = new Date(new Date(loan.due_date).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        const { error: updateErr } = await supabase
-          .from('loans')
-          .update({
-            due_date: newDueDate,
-            renewed: true,
-          })
-          .eq('id', Number(loanId))
-
-        if (updateErr) return { error: updateErr.message }
-        return { success: true }
+    if (!rpcError) {
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(`perpus_renewed_${loanId}`, 'true')
+        } catch {}
       }
+      return { success: true }
+    }
 
-      return { error: error.message }
+    // 2. Fallback query langsung jika RPC belum dibuat
+    const { data: loan, error: fetchErr } = await supabase
+      .from('loans')
+      .select('*')
+      .eq('id', Number(loanId))
+      .single()
+
+    if (fetchErr || !loan) {
+      return { error: 'Peminjaman tidak ditemukan' }
+    }
+
+    if (loan.status !== 'dipinjam') {
+      return { error: 'Buku sudah dikembalikan' }
+    }
+
+    const isAlreadyRenewed =
+      Boolean(loan.renewed) ||
+      (typeof window !== 'undefined' &&
+        localStorage.getItem(`perpus_renewed_${loanId}`) === 'true') ||
+      (loan.created_at &&
+        loan.due_date &&
+        new Date(loan.due_date).getTime() - new Date(loan.created_at).getTime() >
+          8 * 24 * 60 * 60 * 1000)
+
+    if (isAlreadyRenewed) {
+      return { error: 'Peminjaman sudah pernah diperpanjang sebelumnya' }
+    }
+
+    if (new Date(loan.due_date).getTime() < Date.now()) {
+      return { error: 'Buku sudah melewati jatuh tempo, tidak dapat diperpanjang' }
+    }
+
+    const newDueDate = new Date(
+      new Date(loan.due_date).getTime() + 7 * 24 * 60 * 60 * 1000
+    ).toISOString()
+
+    const hasRenewedColumn = 'renewed' in loan
+    const updatePayload = { due_date: newDueDate }
+    if (hasRenewedColumn) {
+      updatePayload.renewed = true
+    }
+
+    // Jalankan update ke tabel loans
+    let updateRes = await supabase
+      .from('loans')
+      .update(updatePayload)
+      .eq('id', Number(loanId))
+      .select()
+
+    // Jika error karena kolom renewed belum ada di database, update due_date saja
+    if (
+      updateRes.error &&
+      (updateRes.error.message?.includes('renewed') ||
+        updateRes.error.code === 'PGRST204' ||
+        updateRes.error.code === '42703')
+    ) {
+      updateRes = await supabase
+        .from('loans')
+        .update({ due_date: newDueDate })
+        .eq('id', Number(loanId))
+        .select()
+    }
+
+    if (updateRes.error) {
+      if (
+        updateRes.error.message?.includes('policy') ||
+        updateRes.error.code === '42501'
+      ) {
+        return {
+          error:
+            'Izin database memerlukan fungsi extend_loan. Silakan jalankan script SQL di supabase_setup.sql pada SQL Editor Supabase.',
+        }
+      }
+      return { error: updateRes.error.message }
+    }
+
+    // Tandai di localStorage agar konsisten di sesi browser
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`perpus_renewed_${loanId}`, 'true')
+      } catch {}
     }
 
     return { success: true }

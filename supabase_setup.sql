@@ -140,6 +140,11 @@ drop policy if exists "loans: baca milik sendiri atau admin" on public.loans;
 create policy "loans: baca milik sendiri atau admin" on public.loans
   for select to authenticated using (user_id = auth.uid() or public.is_admin());
 
+drop policy if exists "loans: update perpanjangan milik sendiri atau admin" on public.loans;
+create policy "loans: update perpanjangan milik sendiri atau admin" on public.loans
+  for update to authenticated using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid() or public.is_admin());
+
 -- Policies for favorites
 alter table public.favorites enable row level security;
 
