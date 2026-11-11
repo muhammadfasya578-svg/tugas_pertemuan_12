@@ -92,7 +92,7 @@ export async function syncSessionFromSupabase() {
       .maybeSingle()
 
     const localAvatar = typeof window !== 'undefined' ? localStorage.getItem('perpus_user_avatar_' + user.id) : null
-    const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url || localAvatar || null
+    const avatarUrl = profile?.avatar_url || localAvatar || null
 
     const sessionUser = {
       id: user.id,
@@ -142,7 +142,7 @@ export async function loginUser(email, password) {
         .maybeSingle()
 
       const localAvatar = typeof window !== 'undefined' ? localStorage.getItem('perpus_user_avatar_' + data.user.id) : null
-      const avatarUrl = profile?.avatar_url || data.user.user_metadata?.avatar_url || localAvatar || null
+      const avatarUrl = profile?.avatar_url || localAvatar || null
 
       const sessionUser = {
         id: data.user.id,
@@ -1471,12 +1471,10 @@ export async function saveProfileAvatar(userId, avatarDataUrl) {
 
   const supabase = getSupabase()
   if (supabase) {
-    try {
-      await supabase.auth.updateUser({
-        data: { avatar_url: avatarDataUrl },
-      })
-    } catch {}
-
+    // PENTING: Jangan pernah memanggil supabase.auth.updateUser({ data: { avatar_url } })
+    // dengan data Base64 karena Supabase Auth SSR akan memecah JWT ke dalam 30+ cookie
+    // browser (sb-*-auth-token.0..30) yang tembus 100 KB dan memicu error 494/431 di Vercel/Node.
+    // Simpan foto profil secara aman hanya di tabel public.profiles dan localStorage.
     try {
       await supabase
         .from('profiles')
@@ -1513,12 +1511,6 @@ export async function removeProfileAvatar(userId) {
 
   const supabase = getSupabase()
   if (supabase) {
-    try {
-      await supabase.auth.updateUser({
-        data: { avatar_url: null },
-      })
-    } catch {}
-
     try {
       await supabase
         .from('profiles')
