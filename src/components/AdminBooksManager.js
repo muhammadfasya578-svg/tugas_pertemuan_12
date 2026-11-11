@@ -14,6 +14,7 @@ import {
   resolveBookCover,
   exportToCSV,
   updateBookRequestStatus,
+  getSession,
 } from '@/lib/storage'
 import {
   Plus,
@@ -205,7 +206,10 @@ export default function AdminBooksManager() {
       res = await addBook({ title, author, category, stock, cover })
       if (!res?.error && fromRequestId) {
         try {
-          await updateBookRequestStatus(fromRequestId, 'disetujui')
+          const user = getSession()
+          await updateBookRequestStatus(fromRequestId, 'diterbitkan', user, {
+            is_created: true,
+          })
         } catch {}
       }
     } else {

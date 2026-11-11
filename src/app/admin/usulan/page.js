@@ -8,6 +8,7 @@ import {
   updateBookRequestStatus,
   deleteBookRequest,
   addBook,
+  fetchBooks,
   exportToCSV,
   getSession,
   syncSessionFromSupabase,
@@ -17,6 +18,7 @@ import { useDialog } from '@/components/DialogContext'
 import {
   BookPlus,
   CheckCircle,
+  CheckCheck,
   XCircle,
   Trash2,
   Download,
@@ -32,6 +34,7 @@ export default function AdminBookRequestsPage() {
   const router = useRouter()
   const { confirm, alert, toast } = useDialog()
   const [requests, setRequests] = useState([])
+  const [books, setBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('semua')
@@ -46,9 +49,13 @@ export default function AdminBookRequestsPage() {
       if (isMounted) {
         setCurrentUser(user || getSession())
       }
-      const data = await fetchBookRequests()
+      const [requestsData, booksData] = await Promise.all([
+        fetchBookRequests(),
+        fetchBooks(),
+      ])
       if (isMounted) {
-        setRequests(data)
+        setRequests(requestsData)
+        setBooks(booksData)
         setLoading(false)
       }
     }
@@ -60,8 +67,21 @@ export default function AdminBookRequestsPage() {
   }, [])
 
   const reloadRequests = async () => {
-    const data = await fetchBookRequests()
-    setRequests(data)
+    const [requestsData, booksData] = await Promise.all([
+      fetchBookRequests(),
+      fetchBooks(),
+    ])
+    setRequests(requestsData)
+    setBooks(booksData)
+  }
+
+  const isBookCreated = (req) => {
+    if (!req) return false
+    if (req.status === 'diterbitkan') return true
+    if (req.is_created) return true
+    const reqTitle = (req.title || '').trim().toLowerCase()
+    if (!reqTitle) return false
+    return books.some((b) => (b.title || '').trim().toLowerCase() === reqTitle)
   }
 
   const handleUpdateStatus = async (id, status) => {
@@ -154,7 +174,11 @@ export default function AdminBookRequestsPage() {
       r.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.userName?.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchStatus = statusFilter === 'semua' || r.status === statusFilter
+    const isCreated = isBookCreated(r)
+    const matchStatus =
+      statusFilter === 'semua' ||
+      r.status === statusFilter ||
+      (statusFilter === 'disetujui' && (r.status === 'diterbitkan' || isCreated))
 
     return matchSearch && matchStatus
   })
@@ -262,11 +286,21 @@ export default function AdminBookRequestsPage() {
                         Menunggu
                       </span>
                     )}
-                    {req.status === 'disetujui' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                        <CheckCircle className="w-3 h-3" />
-                        Disetujui
-                      </span>
+                    {(req.status === 'disetujui' || req.status === 'diterbitkan') && (
+                      isBookCreated(req) ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]"
+                          title="Buku telah berhasil diterbitkan ke katalog perpustakaan"
+                        >
+                          <CheckCheck className="w-3 h-3 text-emerald-700" />
+                          Diterbitkan
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px]">
+                          <CheckCircle className="w-3 h-3 text-emerald-600" />
+                          Disetujui
+                        </span>
+                      )
                     )}
                     {req.status === 'ditolak' && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 text-red-800 font-bold text-[10px]">
@@ -308,16 +342,18 @@ export default function AdminBookRequestsPage() {
                         <CheckCircle className="w-4 h-4" />
                         <span>Setujui</span>
                       </button>
-                      <button
-                        type="button"
-                        disabled={processingId === req.id}
-                        onClick={() => handleConvertToBook(req)}
-                        className="min-h-[44px] px-3 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center gap-1.5 transition cursor-pointer"
-                        title="Tambahkan langsung ke katalog buku"
-                      >
-                        <Plus className="w-4 h-4" />
-                        <span>Tambah Buku</span>
-                      </button>
+                      {!isBookCreated(req) && (
+                        <button
+                          type="button"
+                          disabled={processingId === req.id}
+                          onClick={() => handleConvertToBook(req)}
+                          className="min-h-[44px] px-3 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                          title="Tambahkan langsung ke katalog buku"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Tambah Buku</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         disabled={processingId === req.id}
@@ -330,7 +366,7 @@ export default function AdminBookRequestsPage() {
                     </>
                   )}
 
-                  {req.status === 'disetujui' && (
+                  {req.status === 'disetujui' && !isBookCreated(req) && (
                     <button
                       type="button"
                       disabled={processingId === req.id}
@@ -340,6 +376,16 @@ export default function AdminBookRequestsPage() {
                       <Plus className="w-4 h-4" />
                       <span>Tambahkan ke Buku</span>
                     </button>
+                  )}
+
+                  {isBookCreated(req) && (
+                    <Link
+                      href="/admin/buku"
+                      className="flex-1 min-h-[44px] px-3 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 flex items-center justify-center gap-1.5 transition"
+                    >
+                      <BookOpen className="w-4 h-4 text-emerald-600" />
+                      <span>Lihat di Katalog</span>
+                    </Link>
                   )}
 
                   <button
@@ -407,11 +453,21 @@ export default function AdminBookRequestsPage() {
                             Menunggu
                           </span>
                         )}
-                        {req.status === 'disetujui' && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
-                            <CheckCircle className="w-3 h-3" />
-                            Disetujui
-                          </span>
+                        {(req.status === 'disetujui' || req.status === 'diterbitkan') && (
+                          isBookCreated(req) ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]"
+                              title="Buku telah berhasil diterbitkan ke katalog perpustakaan"
+                            >
+                              <CheckCheck className="w-3.5 h-3.5 text-emerald-700" />
+                              Diterbitkan
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[11px]">
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                              Disetujui
+                            </span>
+                          )
                         )}
                         {req.status === 'ditolak' && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 text-red-800 font-bold text-[11px]">
@@ -434,16 +490,18 @@ export default function AdminBookRequestsPage() {
                               >
                                 <CheckCircle className="w-4 h-4" />
                               </button>
-                              <button
-                                type="button"
-                                disabled={processingId === req.id}
-                                onClick={() => handleConvertToBook(req)}
-                                title="Tambahkan langsung ke katalog buku"
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs transition cursor-pointer"
-                              >
-                                <Plus className="w-3.5 h-3.5" />
-                                <span>Tambah Buku</span>
-                              </button>
+                              {!isBookCreated(req) && (
+                                <button
+                                  type="button"
+                                  disabled={processingId === req.id}
+                                  onClick={() => handleConvertToBook(req)}
+                                  title="Tambahkan langsung ke katalog buku"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs transition cursor-pointer"
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                  <span>Tambah Buku</span>
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 disabled={processingId === req.id}
@@ -456,7 +514,7 @@ export default function AdminBookRequestsPage() {
                             </>
                           )}
 
-                          {req.status === 'disetujui' && (
+                          {req.status === 'disetujui' && !isBookCreated(req) && (
                             <button
                               type="button"
                               disabled={processingId === req.id}
@@ -466,6 +524,17 @@ export default function AdminBookRequestsPage() {
                               <Plus className="w-3.5 h-3.5" />
                               <span>Tambahkan ke Buku</span>
                             </button>
+                          )}
+
+                          {isBookCreated(req) && (
+                            <Link
+                              href="/admin/buku"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold transition"
+                              title="Buku sudah tersedia di katalog perpustakaan"
+                            >
+                              <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Di Katalog</span>
+                            </Link>
                           )}
 
                           <button

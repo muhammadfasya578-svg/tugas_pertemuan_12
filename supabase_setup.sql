@@ -74,7 +74,7 @@ create table if not exists public.book_requests (
   author text not null,
   category text,
   reason text,
-  status text not null default 'menunggu' check (status in ('menunggu', 'disetujui', 'ditolak')),
+  status text not null default 'menunggu' check (status in ('menunggu', 'disetujui', 'ditolak', 'diterbitkan')),
   created_at timestamptz not null default now(),
   updated_at timestamptz
 );

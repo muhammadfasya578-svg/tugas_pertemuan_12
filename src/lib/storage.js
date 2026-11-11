@@ -1196,17 +1196,33 @@ export async function createBookRequest({ title, author, category, reason, user 
   return { error: 'Gagal menyimpan usulan buku' }
 }
 
-export async function updateBookRequestStatus(requestId, status, user = null) {
+export async function updateBookRequestStatus(requestId, status, user = null, extraData = {}) {
+  const reqIdNum = Number(requestId)
+  const isCreated = status === 'diterbitkan' || !!extraData.is_created
+
   const supabase = getSupabase()
   if (supabase) {
     try {
-      const { error } = await supabase
+      let { error } = await supabase
         .from('book_requests')
         .update({
           status,
           updated_at: new Date().toISOString(),
+          ...extraData,
         })
         .eq('id', requestId)
+
+      // Fallback jika Supabase check constraint belum menyertakan 'diterbitkan'
+      if (error && status === 'diterbitkan') {
+        const retry = await supabase
+          .from('book_requests')
+          .update({
+            status: 'disetujui',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', requestId)
+        error = retry.error
+      }
 
       if (!error) {
         recordActivityLog({
@@ -1214,6 +1230,25 @@ export async function updateBookRequestStatus(requestId, status, user = null) {
           actor: user?.name || 'Admin',
           description: `Memperbarui status usulan #${requestId} menjadi "${status}"`,
         })
+
+        if (typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem('perpus_book_requests')
+            const list = raw ? JSON.parse(raw) : []
+            const updated = list.map((r) =>
+              r.id === requestId || r.id === reqIdNum
+                ? {
+                    ...r,
+                    status,
+                    is_created: isCreated,
+                    updated_at: new Date().toISOString(),
+                    ...extraData,
+                  }
+                : r
+            )
+            localStorage.setItem('perpus_book_requests', JSON.stringify(updated))
+          } catch {}
+        }
         return { success: true }
       }
     } catch {}
@@ -1224,8 +1259,14 @@ export async function updateBookRequestStatus(requestId, status, user = null) {
       const raw = localStorage.getItem('perpus_book_requests')
       const list = raw ? JSON.parse(raw) : []
       const updated = list.map((r) =>
-        r.id === requestId
-          ? { ...r, status, updated_at: new Date().toISOString() }
+        r.id === requestId || r.id === reqIdNum
+          ? {
+              ...r,
+              status,
+              is_created: isCreated,
+              updated_at: new Date().toISOString(),
+              ...extraData,
+            }
           : r
       )
       localStorage.setItem('perpus_book_requests', JSON.stringify(updated))
