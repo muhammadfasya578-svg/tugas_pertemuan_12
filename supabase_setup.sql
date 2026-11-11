@@ -36,7 +36,30 @@ create table if not exists public.loans (
   status text not null default 'dipinjam' check (status in ('dipinjam', 'dikembalikan')),
   created_at timestamptz not null default now(),
   due_date timestamptz not null,
-  returned_at timestamptz
+  returned_at timestamptz,
+  renewed boolean not null default false
+);
+
+-- Tambahkan kolom renewed jika tabel sudah pernah dibuat sebelumnya
+alter table public.loans add column if not exists renewed boolean not null default false;
+
+-- 4B. TABEL BUKU FAVORIT (BOOKMARKS)
+create table if not exists public.favorites (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  book_id bigint not null references public.books(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique(user_id, book_id)
+);
+
+-- 4C. TABEL ULASAN DAN RATING BUKU
+create table if not exists public.reviews (
+  id bigint generated always as identity primary key,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  book_id bigint not null references public.books(id) on delete cascade,
+  rating int not null check (rating between 1 and 5),
+  comment text not null,
+  created_at timestamptz not null default now()
 );
 
 -- 5. FUNCTION & TRIGGER BUAT PROFIL OTOMATIS SAAT REGISTER
@@ -117,6 +140,28 @@ drop policy if exists "loans: baca milik sendiri atau admin" on public.loans;
 create policy "loans: baca milik sendiri atau admin" on public.loans
   for select to authenticated using (user_id = auth.uid() or public.is_admin());
 
+-- Policies for favorites
+alter table public.favorites enable row level security;
+
+drop policy if exists "favorites: kelola milik sendiri" on public.favorites;
+create policy "favorites: kelola milik sendiri" on public.favorites
+  for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Policies for reviews
+alter table public.reviews enable row level security;
+
+drop policy if exists "reviews: semua user boleh baca" on public.reviews;
+create policy "reviews: semua user boleh baca" on public.reviews
+  for select to authenticated using (true);
+
+drop policy if exists "reviews: insert review sendiri" on public.reviews;
+create policy "reviews: insert review sendiri" on public.reviews
+  for insert to authenticated with check (user_id = auth.uid());
+
+drop policy if exists "reviews: delete review sendiri atau admin" on public.reviews;
+create policy "reviews: delete review sendiri atau admin" on public.reviews
+  for delete to authenticated using (user_id = auth.uid() or public.is_admin());
+
 -- 8. RPC: PINJAM BUKU
 create or replace function public.borrow_book(p_book_id bigint)
 returns void language plpgsql security definer set search_path = public as $$
@@ -160,8 +205,27 @@ begin
   update books set stock = stock + 1 where id = v_loan.book_id;
 end $$;
 
+-- 9B. RPC: PERPANJANG PEMINJAMAN (EXTEND LOAN +7 HARI)
+create or replace function public.extend_loan(p_loan_id bigint)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_loan loans%rowtype;
+begin
+  select * into v_loan from loans where id = p_loan_id for update;
+  if not found then raise exception 'Peminjaman tidak ditemukan'; end if;
+  if v_loan.user_id <> auth.uid() and not public.is_admin() then
+    raise exception 'Tidak diizinkan';
+  end if;
+  if v_loan.status <> 'dipinjam' then raise exception 'Buku sudah dikembalikan'; end if;
+  if coalesce(v_loan.renewed, false) then raise exception 'Peminjaman sudah pernah diperpanjang sebelumnya'; end if;
+  if now() > v_loan.due_date then raise exception 'Buku sudah melewati jatuh tempo, tidak dapat diperpanjang'; end if;
+
+  update loans set due_date = due_date + interval '7 days', renewed = true where id = p_loan_id;
+end $$;
+
 grant execute on function public.borrow_book(bigint) to authenticated;
 grant execute on function public.return_book(bigint) to authenticated;
+grant execute on function public.extend_loan(bigint) to authenticated;
 
 -- 10. MIGRASI DATA KATEGORI AWAL DARI BUKU
 insert into public.categories (name, description)

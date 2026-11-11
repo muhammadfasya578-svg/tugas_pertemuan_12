@@ -436,6 +436,45 @@ export async function fetchDashboardMetrics() {
         (l) => l.due_date && new Date(l.due_date).getTime() < now
       )
 
+      let totalFines = 0
+      overdueLoans.forEach((l) => {
+        const diffMs = now - new Date(l.due_date).getTime()
+        const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+        totalFines += Math.max(0, days) * 1000
+      })
+
+      const bookLoanCounts = {}
+      safeLoans.forEach((l) => {
+        if (l.book_id) {
+          bookLoanCounts[l.book_id] = (bookLoanCounts[l.book_id] || 0) + 1
+        }
+      })
+
+      const popularBooks = safeBooks
+        .map((b) => ({
+          ...b,
+          loanCount: bookLoanCounts[b.id] || 0,
+          cover: resolveBookCover(b),
+        }))
+        .sort((a, b) => b.loanCount - a.loanCount)
+        .slice(0, 4)
+
+      const catCounts = {}
+      safeBooks.forEach((b) => {
+        if (b.category) {
+          catCounts[b.category] = (catCounts[b.category] || 0) + 1
+        }
+      })
+
+      const totalBooks = safeBooks.length || 1
+      const categoryDistribution = Object.entries(catCounts)
+        .map(([name, count]) => ({
+          name,
+          count,
+          percentage: Math.round((count / totalBooks) * 100),
+        }))
+        .sort((a, b) => b.count - a.count)
+
       const stats = [
         {
           label: 'Total Buku',
@@ -474,7 +513,14 @@ export async function fetchDashboardMetrics() {
         bookTitle: l.book?.title || 'Buku dihapus',
       }))
 
-      return { stats, recent, isLive: true }
+      return {
+        stats,
+        recent,
+        popularBooks,
+        categoryDistribution,
+        totalFines,
+        isLive: true,
+      }
     } catch (err) {
       console.error('fetchDashboardMetrics error:', err)
     }
@@ -488,6 +534,9 @@ export async function fetchDashboardMetrics() {
       { label: 'Peminjaman Terlambat', value: 0, iconName: 'AlertTriangle', color: 'text-red-600', bg: 'bg-red-50' },
     ],
     recent: [],
+    popularBooks: [],
+    categoryDistribution: [],
+    totalFines: 0,
     isLive: false,
   }
 }
@@ -640,4 +689,293 @@ export async function deleteCategory(id, name) {
   } catch (e) {
     return { error: e.message }
   }
+}
+
+export async function extendLoanData(loanId, user) {
+  if (!user) return { error: 'Harus login terlebih dahulu' }
+  const supabase = getSupabase()
+  if (!supabase) return { error: 'Koneksi Supabase tidak aktif' }
+
+  try {
+    const { error } = await supabase.rpc('extend_loan', {
+      p_loan_id: Number(loanId),
+    })
+
+    if (error) {
+      if (error.code === 'PGRST202' || error.message?.includes('function public.extend_loan') || error.message?.includes('does not exist')) {
+        const { data: loan, error: fetchErr } = await supabase
+          .from('loans')
+          .select('*')
+          .eq('id', Number(loanId))
+          .single()
+
+        if (fetchErr || !loan) {
+          return { error: 'Peminjaman tidak ditemukan' }
+        }
+
+        if (loan.status !== 'dipinjam') {
+          return { error: 'Buku sudah dikembalikan' }
+        }
+
+        if (loan.renewed) {
+          return { error: 'Peminjaman sudah pernah diperpanjang sebelumnya' }
+        }
+
+        if (new Date(loan.due_date).getTime() < Date.now()) {
+          return { error: 'Buku sudah melewati jatuh tempo, tidak dapat diperpanjang' }
+        }
+
+        const newDueDate = new Date(new Date(loan.due_date).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        const { error: updateErr } = await supabase
+          .from('loans')
+          .update({
+            due_date: newDueDate,
+            renewed: true,
+          })
+          .eq('id', Number(loanId))
+
+        if (updateErr) return { error: updateErr.message }
+        return { success: true }
+      }
+
+      return { error: error.message }
+    }
+
+    return { success: true }
+  } catch (e) {
+    return { error: e.message }
+  }
+}
+
+export async function fetchFavorites(userId) {
+  if (!userId) return []
+  const supabase = getSupabase()
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('book_id')
+        .eq('user_id', userId)
+
+      if (!error && data) {
+        return data.map((f) => Number(f.book_id))
+      }
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(`perpus_favs_${userId}`)
+      return raw ? JSON.parse(raw) : []
+    } catch {
+      return []
+    }
+  }
+
+  return []
+}
+
+export async function toggleFavorite(bookId, userId) {
+  if (!userId) return { error: 'Silakan login terlebih dahulu untuk menandai favorit' }
+  const cleanBookId = Number(bookId)
+  const supabase = getSupabase()
+
+  let isNowFavorite = false
+
+  if (supabase) {
+    try {
+      const { data: existing, error: checkErr } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('book_id', cleanBookId)
+        .maybeSingle()
+
+      if (!checkErr) {
+        if (existing) {
+          await supabase.from('favorites').delete().eq('id', existing.id)
+          isNowFavorite = false
+        } else {
+          await supabase.from('favorites').insert({
+            user_id: userId,
+            book_id: cleanBookId,
+          })
+          isNowFavorite = true
+        }
+
+        if (typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem(`perpus_favs_${userId}`)
+            let list = raw ? JSON.parse(raw) : []
+            if (isNowFavorite) {
+              list = Array.from(new Set([...list, cleanBookId]))
+            } else {
+              list = list.filter((id) => id !== cleanBookId)
+            }
+            localStorage.setItem(`perpus_favs_${userId}`, JSON.stringify(list))
+          } catch {}
+        }
+
+        return { success: true, isFavorite: isNowFavorite }
+      }
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(`perpus_favs_${userId}`)
+      let list = raw ? JSON.parse(raw) : []
+      if (list.includes(cleanBookId)) {
+        list = list.filter((id) => id !== cleanBookId)
+        isNowFavorite = false
+      } else {
+        list.push(cleanBookId)
+        isNowFavorite = true
+      }
+      localStorage.setItem(`perpus_favs_${userId}`, JSON.stringify(list))
+      return { success: true, isFavorite: isNowFavorite }
+    } catch {}
+  }
+
+  return { success: true, isFavorite: false }
+}
+
+export async function fetchReviews(bookId) {
+  const cleanBookId = Number(bookId)
+  const supabase = getSupabase()
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*, user:profiles(name, email)')
+        .eq('book_id', cleanBookId)
+        .order('created_at', { ascending: false })
+
+      if (!error && data) {
+        const total = data.length
+        const sum = data.reduce((acc, r) => acc + (Number(r.rating) || 0), 0)
+        const avg = total > 0 ? (sum / total).toFixed(1) : '0'
+
+        return {
+          reviews: data.map((r) => ({
+            ...r,
+            userName: r.user?.name || 'Pembaca',
+            userEmail: r.user?.email || '',
+          })),
+          averageRating: Number(avg),
+          totalReviews: total,
+        }
+      }
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(`perpus_reviews_${cleanBookId}`)
+      const localReviews = raw ? JSON.parse(raw) : []
+      const total = localReviews.length
+      const sum = localReviews.reduce((acc, r) => acc + (Number(r.rating) || 0), 0)
+      const avg = total > 0 ? (sum / total).toFixed(1) : '0'
+
+      return {
+        reviews: localReviews,
+        averageRating: Number(avg),
+        totalReviews: total,
+      }
+    } catch {}
+  }
+
+  return { reviews: [], averageRating: 0, totalReviews: 0 }
+}
+
+export async function addReview({ bookId, rating, comment, user }) {
+  if (!user) return { error: 'Harus login untuk memberikan ulasan' }
+  const cleanBookId = Number(bookId)
+  const cleanRating = parseInt(rating, 10)
+  const cleanComment = (comment || '').trim()
+
+  if (isNaN(cleanRating) || cleanRating < 1 || cleanRating > 5) {
+    return { error: 'Rating harus antara 1 sampai 5 bintang' }
+  }
+
+  if (!cleanComment) {
+    return { error: 'Tuliskan ulasan singkat Anda' }
+  }
+
+  const supabase = getSupabase()
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert({
+          user_id: user.id,
+          book_id: cleanBookId,
+          rating: cleanRating,
+          comment: cleanComment,
+        })
+        .select('*, user:profiles(name, email)')
+        .single()
+
+      if (!error && data) {
+        return {
+          success: true,
+          review: {
+            ...data,
+            userName: data.user?.name || user.name || 'Pembaca',
+          },
+        }
+      }
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const newReview = {
+        id: Date.now(),
+        user_id: user.id,
+        book_id: cleanBookId,
+        rating: cleanRating,
+        comment: cleanComment,
+        created_at: new Date().toISOString(),
+        userName: user.name || 'Pembaca',
+        userEmail: user.email || '',
+      }
+      const raw = localStorage.getItem(`perpus_reviews_${cleanBookId}`)
+      const list = raw ? JSON.parse(raw) : []
+      list.unshift(newReview)
+      localStorage.setItem(`perpus_reviews_${cleanBookId}`, JSON.stringify(list))
+      return { success: true, review: newReview }
+    } catch {}
+  }
+
+  return { success: true }
+}
+
+export function exportToCSV(filename, headers, rows) {
+  if (typeof window === 'undefined') return
+
+  const escapeCSV = (val) => {
+    if (val === null || val === undefined) return '""'
+    const str = String(val).replace(/"/g, '""')
+    return `"${str}"`
+  }
+
+  const csvContent =
+    '\uFEFF' +
+    [
+      headers.map(escapeCSV).join(','),
+      ...rows.map((row) => row.map(escapeCSV).join(',')),
+    ].join('\r\n')
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.setAttribute('href', url)
+  link.setAttribute('download', filename.endsWith('.csv') ? filename : `${filename}.csv`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }

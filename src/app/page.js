@@ -52,7 +52,11 @@ export default function HomePage() {
               <p className="text-sm">Memuat katalog buku dari Supabase...</p>
             </div>
           ) : (
-            <CatalogView initialBooks={books} initialCategories={categories} />
+            <CatalogView
+              initialBooks={books}
+              initialCategories={categories}
+              user={profile}
+            />
           )}
         </main>
       </div>

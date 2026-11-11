@@ -1,16 +1,59 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import Image from 'next/image'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import BookCard from '@/components/BookCard'
 import Dropdown from '@/components/Dropdown'
-import { resolveBookCover } from '@/lib/storage'
-import { Search, BookX, X, ArrowRight } from 'lucide-react'
+import LoanAlertBanner from '@/components/LoanAlertBanner'
+import { resolveBookCover, fetchFavorites, toggleFavorite } from '@/lib/storage'
+import { Search, BookX, X, ArrowRight, Bookmark } from 'lucide-react'
 
-export default function CatalogView({ initialBooks, initialCategories = [] }) {
+export default function CatalogView({ initialBooks, initialCategories = [], user = null }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Semua')
+  const [favoriteIds, setFavoriteIds] = useState([])
+  const [onlyFavorites, setOnlyFavorites] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('favorite') === 'true') {
+        setOnlyFavorites(true)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!user?.id) return
+    let isMounted = true
+
+    async function loadFavs() {
+      const favs = await fetchFavorites(user.id)
+      if (isMounted) {
+        setFavoriteIds(favs)
+      }
+    }
+
+    loadFavs()
+    return () => {
+      isMounted = false
+    }
+  }, [user?.id])
+
+  const handleToggleFavorite = async (bookId) => {
+    if (!user) {
+      alert('Silakan login terlebih dahulu untuk menyimpan buku favorit.')
+      return
+    }
+    const res = await toggleFavorite(bookId, user.id)
+    if (res.success) {
+      if (res.isFavorite) {
+        setFavoriteIds((prev) => Array.from(new Set([...prev, Number(bookId)])))
+      } else {
+        setFavoriteIds((prev) => prev.filter((id) => id !== Number(bookId)))
+      }
+    }
+  }
 
   // Kategori murni dari database kategori (dengan fallback ke kategori buku jika kosong)
   const categories = useMemo(() => {
@@ -30,7 +73,7 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
     }))
   }, [categories])
 
-  // Filter buku berdasarkan search query dan kategori terpilih
+  // Filter buku berdasarkan search query, kategori terpilih, dan filter favorit
   const filteredBooks = useMemo(() => {
     return initialBooks.filter((book) => {
       const matchSearch =
@@ -40,20 +83,26 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
       const matchCategory =
         selectedCategory === 'Semua' || book.category === selectedCategory
 
-      return matchSearch && matchCategory
+      const matchFavorite = !onlyFavorites || favoriteIds.includes(Number(book.id))
+
+      return matchSearch && matchCategory && matchFavorite
     })
-  }, [initialBooks, searchQuery, selectedCategory])
+  }, [initialBooks, searchQuery, selectedCategory, onlyFavorites, favoriteIds])
 
   // Buku rekomendasi terpopuler / tersedia untuk rak atas
   const recommendedBooks = useMemo(() => {
     return initialBooks.filter((b) => b.stock > 0).slice(0, 4)
   }, [initialBooks])
 
-  const isFiltering = searchQuery.trim().length > 0 || selectedCategory !== 'Semua'
+  const isFiltering =
+    searchQuery.trim().length > 0 || selectedCategory !== 'Semua' || onlyFavorites
 
   return (
     <div className="space-y-10">
-      {/* Top Header: Discover Title & Dribbble-Style Unified Search Bar */}
+      {/* Due Date Alert Banner if user has active loans */}
+      {user?.id && <LoanAlertBanner userId={user.id} />}
+
+      {/* Top Header: Discover Title & Search Bar */}
       <section
         aria-label="Pencarian dan penjelajahan buku"
         className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 pb-2"
@@ -74,7 +123,10 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
             <Dropdown
               options={categoryOptions}
               value={selectedCategory}
-              onChange={setSelectedCategory}
+              onChange={(val) => {
+                setSelectedCategory(val)
+                setOnlyFavorites(false)
+              }}
               className="w-full sm:w-auto"
             />
           </div>
@@ -99,23 +151,31 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
                 className="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-600"
                 aria-label="Hapus kata kunci pencarian"
               >
-                <X className="w-4 h-4" aria-hidden="true" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
 
-          {/* Submit Action */}
-          <button
-            type="button"
-            onClick={() => {}}
-            className="min-h-[40px] px-5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-semibold text-xs transition-colors flex items-center justify-center shadow-2xs cursor-pointer"
-          >
-            Cari
-          </button>
+          {/* Favorite filter toggle */}
+          {user && (
+            <button
+              type="button"
+              onClick={() => setOnlyFavorites(!onlyFavorites)}
+              className={`min-h-[40px] px-3.5 rounded-xl font-semibold text-xs transition-colors flex items-center gap-1.5 cursor-pointer ${
+                onlyFavorites
+                  ? 'bg-emerald-700 text-white'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200'
+              }`}
+              title="Tampilkan hanya buku favorit"
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${onlyFavorites ? 'fill-white' : ''}`} aria-hidden="true" />
+              <span className="hidden sm:inline">Favorit ({favoriteIds.length})</span>
+            </button>
+          )}
         </div>
       </section>
 
-      {/* Section 1: Rekomendasi Buku (Featured Shelf) - Tampil saat tidak sedang mencari */}
+      {/* Section 1: Rekomendasi Buku - Tampil saat tidak sedang mencari */}
       {!isFiltering && recommendedBooks.length > 0 && (
         <section aria-label="Rekomendasi buku unggulan" className="space-y-4">
           <div className="flex items-center justify-between">
@@ -124,7 +184,10 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
             </h2>
             <button
               type="button"
-              onClick={() => setSelectedCategory('Semua')}
+              onClick={() => {
+                setSelectedCategory('Semua')
+                setOnlyFavorites(false)
+              }}
               className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <span>Lihat semua</span>
@@ -142,7 +205,6 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
                   className="group flex flex-col items-center text-center focus:outline-none"
                   aria-label={`Lihat buku ${book.title}`}
                 >
-                  {/* Stand-up 3D Book with Realistic Soft Drop Shadow */}
                   <div className="relative h-48 sm:h-56 w-full flex items-center justify-center transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-hover:scale-105">
                     <img
                       src={resolveBookCover(book)}
@@ -151,7 +213,6 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
                     />
                   </div>
 
-                  {/* Metadata Below Stand-up Book */}
                   <div className="mt-4 w-full px-1">
                     <h3 className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors text-xs sm:text-sm line-clamp-1 capitalize" title={book.title}>
                       {book.title}
@@ -179,10 +240,16 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-slate-900">
-              {isFiltering ? 'Hasil Pencarian Koleksi' : 'Kategori Buku'}
+              {onlyFavorites
+                ? 'Buku Favorit Tersimpan'
+                : isFiltering
+                ? 'Hasil Pencarian Koleksi'
+                : 'Kategori Buku'}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Pilih kategori atau jelajahi seluruh koleksi buku perpustakaan.
+              {onlyFavorites
+                ? 'Daftar buku yang telah Anda bookmark untuk dibaca nanti.'
+                : 'Pilih kategori atau jelajahi seluruh koleksi buku perpustakaan.'}
             </p>
           </div>
 
@@ -194,12 +261,15 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
         {/* Category Pill Buttons */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {categories.map((cat) => {
-            const isActive = selectedCategory === cat
+            const isActive = selectedCategory === cat && !onlyFavorites
             return (
               <button
                 key={cat}
                 type="button"
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => {
+                  setSelectedCategory(cat)
+                  setOnlyFavorites(false)
+                }}
                 className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
                     ? 'bg-emerald-700 text-white shadow-2xs'
@@ -210,13 +280,33 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
               </button>
             )
           })}
+
+          {user && (
+            <button
+              type="button"
+              onClick={() => setOnlyFavorites(!onlyFavorites)}
+              className={`min-h-[38px] px-4 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
+                onlyFavorites
+                  ? 'bg-emerald-700 text-white shadow-2xs'
+                  : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${onlyFavorites ? 'fill-white' : ''}`} aria-hidden="true" />
+              <span>Favorit Saya ({favoriteIds.length})</span>
+            </button>
+          )}
         </div>
 
         {/* Books Grid */}
         {filteredBooks.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-2">
             {filteredBooks.map((book) => (
-              <BookCard key={book.id} book={book} />
+              <BookCard
+                key={book.id}
+                book={book}
+                isFavorite={favoriteIds.includes(Number(book.id))}
+                onToggleFavorite={user ? handleToggleFavorite : null}
+              />
             ))}
           </div>
         ) : (
@@ -225,10 +315,12 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
               <BookX className="w-7 h-7" aria-hidden="true" />
             </div>
             <h3 className="text-base font-bold text-slate-900">
-              Tidak Ada Buku Ditemukan
+              {onlyFavorites ? 'Belum Ada Buku Favorit' : 'Tidak Ada Buku Ditemukan'}
             </h3>
             <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-              Tidak ada buku yang cocok dengan kata kunci atau kategori yang dipilih.
+              {onlyFavorites
+                ? 'Klik ikon bookmark pada kartu buku untuk menyimpan buku favorit Anda di sini.'
+                : 'Tidak ada buku yang cocok dengan kata kunci atau kategori yang dipilih.'}
             </p>
             {isFiltering && (
               <button
@@ -236,6 +328,7 @@ export default function CatalogView({ initialBooks, initialCategories = [] }) {
                 onClick={() => {
                   setSearchQuery('')
                   setSelectedCategory('Semua')
+                  setOnlyFavorites(false)
                 }}
                 className="mt-4 min-h-[40px] px-4 py-2 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold hover:bg-emerald-100 transition-colors cursor-pointer"
               >

@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import StatusBadge from '@/components/StatusBadge'
-import { formatDate } from '@/lib/utils'
-import { fetchDashboardMetrics } from '@/lib/storage'
+import { formatDate, formatRupiah } from '@/lib/utils'
+import { fetchDashboardMetrics, resolveBookCover } from '@/lib/storage'
 import {
   BookOpen,
   Users,
@@ -14,6 +14,8 @@ import {
   RefreshCw,
   Database,
   Loader2,
+  TrendingUp,
+  PieChart,
 } from 'lucide-react'
 
 const ICON_MAP = {
@@ -26,6 +28,9 @@ const ICON_MAP = {
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState([])
   const [recentLoans, setRecentLoans] = useState([])
+  const [popularBooks, setPopularBooks] = useState([])
+  const [categoryDistribution, setCategoryDistribution] = useState([])
+  const [totalFines, setTotalFines] = useState(0)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [isLive, setIsLive] = useState(false)
@@ -35,6 +40,9 @@ export default function AdminDashboardPage() {
     const data = await fetchDashboardMetrics()
     setStats(data.stats || [])
     setRecentLoans(data.recent || [])
+    setPopularBooks(data.popularBooks || [])
+    setCategoryDistribution(data.categoryDistribution || [])
+    setTotalFines(data.totalFines || 0)
     setIsLive(data.isLive)
     setRefreshing(false)
     setLoading(false)
@@ -64,17 +72,26 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={loadData}
-          disabled={refreshing}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition self-start sm:self-auto cursor-pointer disabled:opacity-50"
-          title="Sinkronkan data dengan Supabase"
-          aria-label="Segarkan data dari Supabase"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
-          <span>{refreshing ? 'Menyinkronkan...' : 'Segarkan Data'}</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          {totalFines > 0 && (
+            <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+              <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Denda Tertunggak: {formatRupiah(totalFines)}</span>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={loadData}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+            title="Sinkronkan data dengan Supabase"
+            aria-label="Segarkan data dari Supabase"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+            <span>{refreshing ? 'Menyinkronkan...' : 'Segarkan Data'}</span>
+          </button>
+        </div>
       </div>
 
       {/* 4 StatCards */}
@@ -118,6 +135,103 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* Analytics Section: Top Books & Category Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Popular Books */}
+        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+              <span>Buku Paling Sering Dipinjam</span>
+            </h2>
+            <Link
+              href="/admin/buku"
+              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+            >
+              Kelola Buku
+            </Link>
+          </div>
+
+          {popularBooks.length > 0 ? (
+            <div className="space-y-3">
+              {popularBooks.map((book, idx) => (
+                <div
+                  key={book.id}
+                  className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-800 font-bold text-xs flex items-center justify-center flex-shrink-0">
+                    #{idx + 1}
+                  </div>
+                  <div className="w-9 h-12 rounded-md overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
+                    <img
+                      src={resolveBookCover(book)}
+                      alt={`Cover ${book.title}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-900 truncate">
+                      {book.title}
+                    </p>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      {book.author} • {book.category}
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full whitespace-nowrap">
+                    {book.loanCount}x dipinjam
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500 py-6 text-center">
+              Belum ada riwayat peminjaman buku.
+            </p>
+          )}
+        </div>
+
+        {/* Category Distribution */}
+        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <PieChart className="w-4 h-4 text-emerald-700" aria-hidden="true" />
+              <span>Distribusi Kategori Koleksi</span>
+            </h2>
+            <Link
+              href="/admin/kategori"
+              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+            >
+              Kelola Kategori
+            </Link>
+          </div>
+
+          {categoryDistribution.length > 0 ? (
+            <div className="space-y-3.5">
+              {categoryDistribution.map((item) => (
+                <div key={item.name} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-800">{item.name}</span>
+                    <span className="text-slate-500">
+                      {item.count} buku ({item.percentage}%)
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-600 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.max(5, item.percentage)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500 py-6 text-center">
+              Belum ada data kategori buku.
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* Recent Loans Section */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
@@ -151,7 +265,7 @@ export default function AdminDashboardPage() {
                   <th scope="col" className="px-6 py-4">Buku</th>
                   <th scope="col" className="px-6 py-4">Tgl Pinjam</th>
                   <th scope="col" className="px-6 py-4">Jatuh Tempo</th>
-                  <th scope="col" className="px-6 py-4">Status</th>
+                  <th scope="col" className="px-6 py-4">Status & Denda</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">

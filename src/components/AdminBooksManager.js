@@ -10,6 +10,7 @@ import {
   updateBookData,
   deleteBookData,
   resolveBookCover,
+  exportToCSV,
 } from '@/lib/storage'
 import {
   Plus,
@@ -22,6 +23,7 @@ import {
   Loader2,
   Upload,
   Image as ImageIcon,
+  Download,
 } from 'lucide-react'
 
 export default function AdminBooksManager() {
@@ -186,6 +188,13 @@ export default function AdminBooksManager() {
     }
   }
 
+  const handleExportBooks = () => {
+    if (books.length === 0) return
+    const headers = ['ID', 'Judul Buku', 'Penulis', 'Kategori', 'Jumlah Stok']
+    const rows = filteredBooks.map((b) => [b.id, b.title, b.author, b.category, b.stock])
+    exportToCSV('katalog-buku-perpustakaan', headers, rows)
+  }
+
   const filteredBooks = books.filter(
     (b) =>
       b.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -212,14 +221,27 @@ export default function AdminBooksManager() {
           />
         </div>
 
-        {/* Add Button */}
-        <button
-          onClick={openAddModal}
-          className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-emerald-600 text-white font-medium text-sm hover:bg-emerald-700 active:bg-emerald-800 transition shadow-xs"
-        >
-          <Plus className="w-4 h-4" aria-hidden="true" />
-          <span>Tambah Buku Baru</span>
-        </button>
+        {/* Buttons */}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={handleExportBooks}
+            className="inline-flex items-center gap-1.5 px-3.5 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer"
+            title="Ekspor katalog buku ke format CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
+            <span>Ekspor CSV</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={openAddModal}
+            className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-emerald-700 text-white font-medium text-sm hover:bg-emerald-800 active:bg-emerald-900 transition shadow-xs cursor-pointer"
+          >
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            <span>Tambah Buku Baru</span>
+          </button>
+        </div>
       </div>
 
       {/* Table */}

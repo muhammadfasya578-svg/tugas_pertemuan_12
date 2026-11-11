@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   BookOpen,
+  Heart,
 } from 'lucide-react'
 import { clearSession } from '@/lib/storage'
 
@@ -59,6 +60,13 @@ export default function AppSidebar({ profile }) {
       sublabel: 'Buku Dipinjam',
       icon: Bookmark,
       isActive: pathname === '/riwayat',
+    },
+    {
+      href: '/?favorite=true',
+      label: 'Favorite',
+      sublabel: 'Buku Disimpan',
+      icon: Heart,
+      isActive: false,
     },
   ]
 
