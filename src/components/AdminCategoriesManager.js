@@ -197,28 +197,77 @@ export default function AdminCategoriesManager() {
         </div>
       </div>
 
-      {/* Tabel Kategori */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-sm text-slate-500 flex flex-col items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mb-3" />
-            <p>Memuat daftar kategori dari Supabase...</p>
+      {/* Content: Mobile Cards & Desktop Table */}
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-sm text-slate-500 flex flex-col items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mb-3" />
+          <p>Memuat daftar kategori dari Supabase...</p>
+        </div>
+      ) : filteredCategories.length > 0 ? (
+        <div className="space-y-4">
+          {/* TAMPILAN MOBILE: Kartu Kategori (md:hidden) */}
+          <div className="md:hidden space-y-3">
+            {filteredCategories.map((cat, idx) => (
+              <article
+                key={cat.id || idx}
+                className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-2.5"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                      <h3 className="font-bold text-slate-900 text-sm">{cat.name}</h3>
+                      <span className="text-[10px] font-mono text-slate-400">#{cat.id}</span>
+                    </div>
+                    {cat.description && (
+                      <p className="text-xs text-slate-500 mt-1">{cat.description}</p>
+                    )}
+                  </div>
+
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <BookOpen className="w-3 h-3 text-emerald-600" />
+                    <span>{cat.book_count || 0} buku</span>
+                  </span>
+                </div>
+
+                {/* Tombol Aksi Mobile (>= 44px) */}
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(cat)}
+                    className="flex-1 min-h-[44px] px-3 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    <span>Ubah</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(cat)}
+                    className="min-h-[44px] px-4 rounded-xl text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Hapus</span>
+                  </button>
+                </div>
+              </article>
+            ))}
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                <tr>
-                  <th scope="col" className="px-6 py-4">ID</th>
-                  <th scope="col" className="px-6 py-4">Nama Kategori</th>
-                  <th scope="col" className="px-6 py-4">Deskripsi</th>
-                  <th scope="col" className="px-6 py-4 text-center">Jumlah Buku</th>
-                  <th scope="col" className="px-6 py-4 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredCategories.length > 0 ? (
-                  filteredCategories.map((cat, idx) => (
+
+          {/* TAMPILAN DESKTOP: Tabel Kategori Lengkap (hidden md:block) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-700">
+                <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <tr>
+                    <th scope="col" className="px-6 py-4">ID</th>
+                    <th scope="col" className="px-6 py-4">Nama Kategori</th>
+                    <th scope="col" className="px-6 py-4">Deskripsi</th>
+                    <th scope="col" className="px-6 py-4 text-center">Jumlah Buku</th>
+                    <th scope="col" className="px-6 py-4 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredCategories.map((cat, idx) => (
                     <tr key={cat.id || idx} className="hover:bg-slate-50/80 transition">
                       <td className="px-6 py-4 text-xs font-mono text-slate-400">
                         #{cat.id}
@@ -259,21 +308,19 @@ export default function AdminCategoriesManager() {
                         </div>
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-slate-500 text-sm">
-                      {search
-                        ? 'Tidak ada kategori yang sesuai dengan kata kunci pencarian.'
-                        : 'Belum ada kategori terdaftar.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 text-sm">
+          {search
+            ? 'Tidak ada kategori yang sesuai dengan kata kunci pencarian.'
+            : 'Belum ada kategori terdaftar.'}
+        </div>
+      )}
 
       {/* Modal Tambah / Edit Kategori */}
       {isModalOpen && (

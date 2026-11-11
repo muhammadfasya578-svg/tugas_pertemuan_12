@@ -66,13 +66,13 @@ export default function AdminSidebar({ profile }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition whitespace-nowrap ${
+              className={`flex items-center gap-2.5 px-3.5 py-2.5 min-h-[44px] rounded-xl text-xs sm:text-sm font-medium transition whitespace-nowrap ${
                 isActive
-                  ? 'bg-emerald-50 text-emerald-800 font-semibold'
+                  ? 'bg-emerald-50 text-emerald-800 font-semibold shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <Icon className="w-4 h-4" aria-hidden="true" />
+              <Icon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
               <span>{item.label}</span>
             </Link>
           )

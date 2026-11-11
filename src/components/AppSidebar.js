@@ -256,6 +256,71 @@ export default function AppSidebar({ profile }) {
           </button>
         </div>
       </aside>
+
+      {/* Mobile Bottom Navigation Bar (Thumb Friendly) */}
+      <nav
+        aria-label="Navigasi Bawah Layar Sentuh"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 py-1 px-2 flex items-center justify-around shadow-lg"
+      >
+        <Link
+          href="/"
+          className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl min-w-[54px] min-h-[48px] transition ${
+            pathname === '/'
+              ? 'text-emerald-700 font-bold'
+              : 'text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <Compass className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5">Discover</span>
+        </Link>
+
+        <Link
+          href="/riwayat"
+          className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl min-w-[54px] min-h-[48px] transition ${
+            pathname === '/riwayat'
+              ? 'text-emerald-700 font-bold'
+              : 'text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <Bookmark className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5">Riwayat</span>
+        </Link>
+
+        <Link
+          href="/kartu-anggota"
+          className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl min-w-[54px] min-h-[48px] transition ${
+            pathname === '/kartu-anggota'
+              ? 'text-emerald-700 font-bold'
+              : 'text-slate-500 hover:text-slate-900'
+          }`}
+        >
+          <CreditCard className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5">Kartu</span>
+        </Link>
+
+        {profile?.role === 'admin' ? (
+          <Link
+            href="/admin"
+            className={`flex flex-col items-center justify-center py-1.5 px-3 rounded-xl min-w-[54px] min-h-[48px] transition ${
+              pathname.startsWith('/admin')
+                ? 'text-emerald-700 font-bold'
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <ShieldCheck className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Admin</span>
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsMobileOpen(true)}
+            className="flex flex-col items-center justify-center py-1.5 px-3 rounded-xl min-w-[54px] min-h-[48px] text-slate-500 hover:text-slate-900 transition cursor-pointer"
+          >
+            <Menu className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Menu</span>
+          </button>
+        )}
+      </nav>
     </>
   )
 }

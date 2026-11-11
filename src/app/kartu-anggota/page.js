@@ -75,7 +75,7 @@ export default function MemberCardPage() {
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <main className="p-4 sm:p-8 max-w-5xl w-full mx-auto flex-1">
+        <main className="p-4 sm:p-8 pb-24 md:pb-8 max-w-5xl w-full mx-auto flex-1">
           {/* Header Action Bar */}
           <div className="print:hidden flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div>
@@ -145,7 +145,7 @@ export default function MemberCardPage() {
               <div className="max-w-xl mx-auto">
                 <div
                   id="library-member-card"
-                  className="relative overflow-hidden rounded-3xl bg-linear-to-br from-emerald-800 via-emerald-700 to-slate-900 text-white shadow-xl p-6 sm:p-8 border border-emerald-600/30 print:border-slate-800 print:shadow-none print:m-0"
+                  className="relative overflow-hidden rounded-3xl bg-linear-to-br from-emerald-800 via-emerald-700 to-slate-900 text-white shadow-xl p-5 sm:p-8 border border-emerald-600/30 print:border-slate-800 print:shadow-none print:m-0"
                 >
                   {/* Decorative Background Patterns */}
                   <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-emerald-500/15 blur-2xl pointer-events-none" />

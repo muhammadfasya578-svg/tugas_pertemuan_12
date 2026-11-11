@@ -5,10 +5,16 @@
   --foreground: #0f172a;
 }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* R-39: Interactive Affordances & Accessible Cursors */

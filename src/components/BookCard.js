@@ -27,7 +27,7 @@ export default function BookCard({ book, isFavorite = false, onToggleFavorite })
               onToggleFavorite(book.id)
             }}
             aria-label={isFavorite ? 'Hapus dari buku favorit' : 'Simpan ke buku favorit'}
-            className={`absolute top-2.5 left-2.5 w-8 h-8 rounded-full flex items-center justify-center transition-all z-10 shadow-xs cursor-pointer ${
+            className={`absolute top-2.5 left-2.5 w-9 h-9 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all z-10 shadow-xs cursor-pointer ${
               isFavorite
                 ? 'bg-emerald-700 text-white'
                 : 'bg-white/95 text-slate-400 hover:text-emerald-700 hover:bg-white'
@@ -85,7 +85,7 @@ export default function BookCard({ book, isFavorite = false, onToggleFavorite })
           <Link
             href={`/buku/${book.id}`}
             aria-label={`Lihat detail dan pinjam buku ${book.title}`}
-            className="min-h-[36px] px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-medium text-xs transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+            className="min-h-[44px] sm:min-h-[38px] px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-medium text-xs transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
           >
             <span>Lihat Buku</span>
             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

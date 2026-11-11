@@ -128,7 +128,7 @@ export default function AdminActivityLogPage() {
       </div>
 
       {/* Log Feed List */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-2xs">
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 p-4 sm:p-6 shadow-2xs">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center text-slate-400">
             <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mb-2" />

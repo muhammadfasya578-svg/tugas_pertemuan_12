@@ -257,50 +257,86 @@ export default function AdminDashboardPage() {
             <span>Memuat peminjaman terbaru...</span>
           </div>
         ) : recentLoans.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-700">
-              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                <tr>
-                  <th scope="col" className="px-6 py-4">Peminjam</th>
-                  <th scope="col" className="px-6 py-4">Buku</th>
-                  <th scope="col" className="px-6 py-4">Tgl Pinjam</th>
-                  <th scope="col" className="px-6 py-4">Jatuh Tempo</th>
-                  <th scope="col" className="px-6 py-4">Status & Denda</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {recentLoans.map((loan) => (
-                  <tr key={loan.id} className="hover:bg-slate-50 transition">
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-900">
-                        {loan.userName}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {loan.userEmail}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-medium text-slate-900">
+          <div className="p-4 sm:p-0">
+            {/* TAMPILAN MOBILE: Kartu Peminjaman Terbaru (md:hidden) */}
+            <div className="md:hidden space-y-3">
+              {recentLoans.map((loan) => (
+                <div
+                  key={loan.id}
+                  className="bg-slate-50/70 border border-slate-200/80 rounded-2xl p-3.5 space-y-2 text-xs"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-bold text-slate-900 block text-sm">
                         {loan.bookTitle}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-slate-600">
-                      {formatDate(loan.created_at)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-700">
-                      {formatDate(loan.due_date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <StatusBadge
-                        status={loan.status}
-                        dueDate={loan.due_date}
-                        returnedAt={loan.returned_at}
-                      />
-                    </td>
+                      <span className="text-slate-500 text-[11px]">
+                        Peminjam: {loan.userName}
+                      </span>
+                    </div>
+                    <StatusBadge
+                      status={loan.status}
+                      dueDate={loan.due_date}
+                      returnedAt={loan.returned_at}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-200/60 text-slate-500">
+                    <span>Pinjam: {formatDate(loan.created_at)}</span>
+                    <span className="font-semibold text-slate-700">
+                      Batas: {formatDate(loan.due_date)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* TAMPILAN DESKTOP: Tabel Peminjaman Terbaru (hidden md:block) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-700">
+                <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <tr>
+                    <th scope="col" className="px-6 py-4">Peminjam</th>
+                    <th scope="col" className="px-6 py-4">Buku</th>
+                    <th scope="col" className="px-6 py-4">Tgl Pinjam</th>
+                    <th scope="col" className="px-6 py-4">Jatuh Tempo</th>
+                    <th scope="col" className="px-6 py-4">Status & Denda</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {recentLoans.map((loan) => (
+                    <tr key={loan.id} className="hover:bg-slate-50 transition">
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-slate-900">
+                          {loan.userName}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {loan.userEmail}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="font-medium text-slate-900">
+                          {loan.bookTitle}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-slate-600">
+                        {formatDate(loan.created_at)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-700">
+                        {formatDate(loan.due_date)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge
+                          status={loan.status}
+                          dueDate={loan.due_date}
+                          returnedAt={loan.returned_at}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="p-8 text-center text-sm text-slate-600">

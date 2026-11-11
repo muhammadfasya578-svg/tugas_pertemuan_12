@@ -169,10 +169,10 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
       >
         <div className="flex items-center justify-between w-full lg:w-auto">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               Jelajahi Buku
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
               Temukan dan pinjam bacaan favoritmu dari koleksi perpustakaan.
             </p>
           </div>
@@ -184,7 +184,7 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
               <button
                 type="button"
                 onClick={() => setIsRequestModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white border border-slate-200 text-slate-700 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50/40 text-xs font-semibold shadow-2xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-2xl bg-white border border-slate-200 text-slate-700 hover:text-emerald-700 hover:border-emerald-300 hover:bg-emerald-50/40 text-xs font-semibold shadow-2xs transition cursor-pointer"
                 title="Usulkan Buku Baru"
               >
                 <BookPlus className="w-4 h-4 text-emerald-600" />
@@ -274,8 +274,8 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
           </div>
 
           {/* Physical Standing Book Showcase */}
-          <div className="bg-gradient-to-b from-slate-100/70 via-slate-50 to-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-2xs">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 items-end">
+          <div className="bg-gradient-to-b from-slate-100/70 via-slate-50 to-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 border border-slate-200/80 shadow-2xs">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 items-end">
               {recommendedBooks.map((book) => (
                 <Link
                   key={book.id}
@@ -283,7 +283,7 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
                   className="group flex flex-col items-center text-center focus:outline-none"
                   aria-label={`Lihat buku ${book.title}`}
                 >
-                  <div className="relative h-48 sm:h-56 w-full flex items-center justify-center transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-hover:scale-105">
+                  <div className="relative h-40 sm:h-56 w-full flex items-center justify-center transition-transform duration-300 ease-out group-hover:-translate-y-2.5 group-hover:scale-105">
                     <img
                       src={resolveBookCover(book)}
                       alt={`Sampul buku ${book.title}`}

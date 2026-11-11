@@ -228,7 +228,7 @@ function BookDetailContent() {
       <AppSidebar profile={user} />
 
       <div className="flex-1 flex flex-col min-w-0">
-        <main className="max-w-5xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
+        <main className="max-w-5xl mx-auto px-4 py-8 pb-24 md:pb-8 flex-1 w-full space-y-8">
           {/* Header Action: Kembali & Bookmark */}
           <div className="flex items-center justify-between">
             <Link

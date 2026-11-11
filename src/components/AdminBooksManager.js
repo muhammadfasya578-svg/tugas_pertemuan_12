@@ -258,93 +258,159 @@ export default function AdminBooksManager() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
-              <tr>
-                <th scope="col" className="px-6 py-4">ID</th>
-                <th scope="col" className="px-6 py-4">Judul & Penulis</th>
-                <th scope="col" className="px-6 py-4">Kategori</th>
-                <th scope="col" className="px-6 py-4">Stok</th>
-                <th scope="col" className="px-6 py-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredBooks.length > 0 ? (
-                filteredBooks.map((book) => (
-                  <tr key={book.id} className="hover:bg-slate-50/80 transition">
-                    <td className="px-6 py-4 text-xs font-mono text-slate-500">
-                      #{book.id}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-14 relative flex-shrink-0 rounded-lg bg-slate-100 overflow-hidden shadow-2xs border border-slate-200">
-                          <img
-                            src={resolveBookCover(book)}
-                            alt={`Sampul ${book.title}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="font-semibold text-slate-900 line-clamp-1">
-                            {book.title}
-                          </div>
-                          <div className="text-xs text-slate-500 line-clamp-1">{book.author}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+      {/* Content: Mobile Cards List & Desktop Table */}
+      {filteredBooks.length > 0 ? (
+        <div className="space-y-4">
+          {/* TAMPILAN MOBILE: Kartu Buku Responsif (md:hidden) */}
+          <div className="md:hidden space-y-3">
+            {filteredBooks.map((book) => (
+              <article
+                key={book.id}
+                className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs space-y-3"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-14 h-20 relative flex-shrink-0 rounded-xl bg-slate-100 overflow-hidden shadow-2xs border border-slate-200">
+                    <img
+                      src={resolveBookCover(book)}
+                      alt={`Sampul ${book.title}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[10px] font-mono font-bold text-slate-400">
+                      ID #{book.id}
+                    </div>
+                    <h3 className="font-bold text-slate-900 text-sm leading-snug line-clamp-1 mt-0.5">
+                      {book.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
+                      {book.author}
+                    </p>
+
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                         {book.category}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
                       <span
-                        className={`font-semibold ${
-                          book.stock > 0 ? 'text-slate-900' : 'text-red-600'
+                        className={`text-xs font-bold ${
+                          book.stock > 0 ? 'text-slate-700' : 'text-red-600'
                         }`}
                       >
-                        {book.stock}
-                      </span>{' '}
-                      <span className="text-xs text-slate-500">eksemplar</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => openEditModal(book)}
-                          className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
-                          title="Edit Buku"
-                          aria-label={`Edit data buku ${book.title}`}
-                        >
-                          <Pencil className="w-4 h-4" aria-hidden="true" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(book)}
-                          className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                          title="Hapus Buku"
-                          aria-label={`Hapus buku ${book.title}`}
-                        >
-                          <Trash2 className="w-4 h-4" aria-hidden="true" />
-                        </button>
-                      </div>
-                    </td>
+                        Stok: {book.stock}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tombol Aksi Mobile (Min touch target 44px) */}
+                <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(book)}
+                    className="flex-1 min-h-[44px] px-3 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    <span>Ubah Buku</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(book)}
+                    className="min-h-[44px] px-4 rounded-xl text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Hapus</span>
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {/* TAMPILAN DESKTOP: Tabel Buku Lengkap (hidden md:block) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-700">
+                <thead className="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <tr>
+                    <th scope="col" className="px-6 py-4">ID</th>
+                    <th scope="col" className="px-6 py-4">Judul & Penulis</th>
+                    <th scope="col" className="px-6 py-4">Kategori</th>
+                    <th scope="col" className="px-6 py-4">Stok</th>
+                    <th scope="col" className="px-6 py-4 text-right">Aksi</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-slate-600 text-sm">
-                    Tidak ada buku yang sesuai dengan pencarian.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredBooks.map((book) => (
+                    <tr key={book.id} className="hover:bg-slate-50/80 transition">
+                      <td className="px-6 py-4 text-xs font-mono text-slate-500">
+                        #{book.id}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-14 relative flex-shrink-0 rounded-lg bg-slate-100 overflow-hidden shadow-2xs border border-slate-200">
+                            <img
+                              src={resolveBookCover(book)}
+                              alt={`Sampul ${book.title}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-900 line-clamp-1">
+                              {book.title}
+                            </div>
+                            <div className="text-xs text-slate-500 line-clamp-1">{book.author}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          {book.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`font-semibold ${
+                            book.stock > 0 ? 'text-slate-900' : 'text-red-600'
+                          }`}
+                        >
+                          {book.stock}
+                        </span>{' '}
+                        <span className="text-xs text-slate-500">eksemplar</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(book)}
+                            className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition"
+                            title="Edit Buku"
+                            aria-label={`Edit data buku ${book.title}`}
+                          >
+                            <Pencil className="w-4 h-4" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(book)}
+                            className="p-1.5 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                            title="Hapus Buku"
+                            aria-label={`Hapus buku ${book.title}`}
+                          >
+                            <Trash2 className="w-4 h-4" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-600 text-sm">
+          Tidak ada buku yang sesuai dengan pencarian.
+        </div>
+      )}
 
       {/* Modal Dialog Tambah / Edit */}
       {isModalOpen && (
