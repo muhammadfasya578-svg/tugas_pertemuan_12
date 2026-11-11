@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Dropdown from '@/components/Dropdown'
+import { useDialog } from '@/components/DialogContext'
 import {
   fetchBooks,
   fetchCategories,
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react'
 
 export default function AdminBooksManager() {
+  const { confirm, alert, toast } = useDialog()
   const [books, setBooks] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -175,15 +177,27 @@ export default function AdminBooksManager() {
   }
 
   const handleDelete = async (book) => {
-    const confirmed = window.confirm(
-      `Yakin ingin menghapus buku "${book.title}"?`
-    )
+    const confirmed = await confirm({
+      title: 'Hapus Data Buku',
+      message: `Apakah Anda yakin ingin menghapus buku "${book.title}"? Buku yang masih memiliki transaksi peminjaman aktif tidak dapat dihapus.`,
+      confirmText: 'Ya, Hapus Buku',
+      cancelText: 'Batal',
+      type: 'danger',
+    })
     if (!confirmed) return
 
     const res = await deleteBookData(book.id)
     if (res?.error) {
-      alert(res.error)
+      await alert({
+        title: 'Penghapusan Gagal',
+        message: res.error,
+        type: 'error',
+      })
     } else {
+      toast({
+        message: `Buku "${book.title}" berhasil dihapus.`,
+        type: 'success',
+      })
       loadBooks()
     }
   }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useDialog } from '@/components/DialogContext'
 import {
   fetchLoans,
   returnBookData,
@@ -22,6 +23,7 @@ import {
 } from 'lucide-react'
 
 export default function AdminLoansManager() {
+  const { confirm, alert, toast } = useDialog()
   const [loans, setLoans] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -43,9 +45,13 @@ export default function AdminLoansManager() {
   }, [])
 
   const handleReturn = async (loanId) => {
-    const confirmed = window.confirm(
-      'Konfirmasi pengembalian buku ini untuk peminjam?'
-    )
+    const confirmed = await confirm({
+      title: 'Konfirmasi Pengembalian',
+      message: 'Konfirmasi pengembalian buku ini untuk peminjam?',
+      confirmText: 'Ya, Tandai Kembali',
+      cancelText: 'Batal',
+      type: 'return',
+    })
     if (!confirmed) return
 
     setProcessingId(loanId)
@@ -53,16 +59,28 @@ export default function AdminLoansManager() {
     setProcessingId(null)
 
     if (res?.error) {
-      alert(res.error)
+      await alert({
+        title: 'Pengembalian Gagal',
+        message: res.error,
+        type: 'error',
+      })
     } else {
+      toast({
+        message: 'Buku berhasil ditandai sebagai dikembalikan!',
+        type: 'success',
+      })
       await loadLoans()
     }
   }
 
   const handleExtend = async (loanId) => {
-    const confirmed = window.confirm(
-      'Perpanjang masa peminjaman ini selama 7 hari tambahan?'
-    )
+    const confirmed = await confirm({
+      title: 'Perpanjang Peminjaman',
+      message: 'Perpanjang masa peminjaman ini selama 7 hari tambahan?',
+      confirmText: 'Perpanjang (+7 Hari)',
+      cancelText: 'Batal',
+      type: 'extend',
+    })
     if (!confirmed) return
 
     setProcessingId(loanId)
@@ -70,9 +88,16 @@ export default function AdminLoansManager() {
     setProcessingId(null)
 
     if (res?.error) {
-      alert(res.error)
+      await alert({
+        title: 'Perpanjangan Gagal',
+        message: res.error,
+        type: 'error',
+      })
     } else {
-      alert('Masa peminjaman berhasil diperpanjang 7 hari!')
+      toast({
+        message: 'Masa peminjaman berhasil diperpanjang 7 hari!',
+        type: 'success',
+      })
       await loadLoans()
     }
   }

@@ -5,10 +5,12 @@ import Link from 'next/link'
 import BookCard from '@/components/BookCard'
 import Dropdown from '@/components/Dropdown'
 import LoanAlertBanner from '@/components/LoanAlertBanner'
+import { useDialog } from '@/components/DialogContext'
 import { resolveBookCover, fetchFavorites, toggleFavorite } from '@/lib/storage'
 import { Search, BookX, X, ArrowRight, Bookmark } from 'lucide-react'
 
 export default function CatalogView({ initialBooks, initialCategories = [], user = null }) {
+  const { confirm, alert, toast } = useDialog()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Semua')
   const [favoriteIds, setFavoriteIds] = useState([])
@@ -42,15 +44,26 @@ export default function CatalogView({ initialBooks, initialCategories = [], user
 
   const handleToggleFavorite = async (bookId) => {
     if (!user) {
-      alert('Silakan login terlebih dahulu untuk menyimpan buku favorit.')
+      const goToLogin = await confirm({
+        title: 'Login Diperlukan',
+        message: 'Silakan login terlebih dahulu untuk menyimpan buku favorit ke koleksimu.',
+        confirmText: 'Ke Halaman Login',
+        cancelText: 'Nanti Saja',
+        type: 'primary',
+      })
+      if (goToLogin) {
+        window.location.href = '/login'
+      }
       return
     }
     const res = await toggleFavorite(bookId, user.id)
     if (res.success) {
       if (res.isFavorite) {
         setFavoriteIds((prev) => Array.from(new Set([...prev, Number(bookId)])))
+        toast({ message: 'Buku disimpan ke Favorit', type: 'success' })
       } else {
         setFavoriteIds((prev) => prev.filter((id) => id !== Number(bookId)))
+        toast({ message: 'Buku dihapus dari Favorit', type: 'info' })
       }
     }
   }

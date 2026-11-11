@@ -1,5 +1,6 @@
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { DialogProvider } from "@/components/DialogContext";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -49,7 +50,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" className={`${plusJakartaSans.variable} font-sans antialiased`}>
       <body className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
-        {children}
+        <DialogProvider>
+          {children}
+        </DialogProvider>
       </body>
     </html>
   );

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AppSidebar from '@/components/AppSidebar'
 import StatusBadge from '@/components/StatusBadge'
 import LoanAlertBanner from '@/components/LoanAlertBanner'
+import { useDialog } from '@/components/DialogContext'
 import {
   fetchLoans,
   returnBookData,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react'
 
 export default function RiwayatPage() {
+  const { confirm, alert, toast } = useDialog()
   const [user, setUser] = useState(() => {
     if (typeof window === 'undefined') return null
     return getSession()
@@ -52,7 +54,13 @@ export default function RiwayatPage() {
   }, [])
 
   const handleReturn = async (loanId) => {
-    const confirmed = window.confirm('Apakah kamu yakin ingin mengembalikan buku ini?')
+    const confirmed = await confirm({
+      title: 'Kembalikan Buku',
+      message: 'Apakah kamu yakin ingin mengembalikan buku ini ke perpustakaan sekarang?',
+      confirmText: 'Ya, Kembalikan',
+      cancelText: 'Batal',
+      type: 'return',
+    })
     if (!confirmed) return
 
     setProcessingId(loanId)
@@ -60,14 +68,28 @@ export default function RiwayatPage() {
     setProcessingId(null)
 
     if (res?.error) {
-      alert(res.error)
+      await alert({
+        title: 'Pengembalian Gagal',
+        message: res.error,
+        type: 'error',
+      })
     } else {
+      toast({
+        message: 'Buku berhasil dikembalikan!',
+        type: 'success',
+      })
       await loadData()
     }
   }
 
   const handleExtend = async (loanId) => {
-    const confirmed = window.confirm('Perpanjang batas waktu peminjaman buku ini selama 7 hari tambahan?')
+    const confirmed = await confirm({
+      title: 'Perpanjang Peminjaman',
+      message: 'Perpanjang batas waktu peminjaman buku ini selama 7 hari tambahan?',
+      confirmText: 'Perpanjang (+7 Hari)',
+      cancelText: 'Batal',
+      type: 'extend',
+    })
     if (!confirmed) return
 
     setProcessingId(loanId)
@@ -75,9 +97,16 @@ export default function RiwayatPage() {
     setProcessingId(null)
 
     if (res?.error) {
-      alert(res.error)
+      await alert({
+        title: 'Perpanjangan Gagal',
+        message: res.error,
+        type: 'error',
+      })
     } else {
-      alert('Peminjaman berhasil diperpanjang 7 hari!')
+      toast({
+        message: 'Peminjaman berhasil diperpanjang 7 hari!',
+        type: 'success',
+      })
       await loadData()
     }
   }

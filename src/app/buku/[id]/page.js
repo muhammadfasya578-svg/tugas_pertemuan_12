@@ -18,6 +18,7 @@ import {
   toggleFavorite,
 } from '@/lib/storage'
 import { formatDate } from '@/lib/utils'
+import { useDialog } from '@/components/DialogContext'
 import {
   BookOpen,
   ArrowLeft,
@@ -35,6 +36,7 @@ import {
 } from 'lucide-react'
 
 function BookDetailContent() {
+  const { confirm, alert, toast } = useDialog()
   const params = useParams()
   const router = useRouter()
   const id = params?.id
@@ -119,19 +121,41 @@ function BookDetailContent() {
 
   const handleToggleFav = async () => {
     if (!user) {
-      alert('Silakan login terlebih dahulu untuk menyimpan buku favorit.')
+      const goToLogin = await confirm({
+        title: 'Login Diperlukan',
+        message: 'Silakan login terlebih dahulu untuk menyimpan buku favorit ke koleksimu.',
+        confirmText: 'Ke Halaman Login',
+        cancelText: 'Nanti Saja',
+        type: 'primary',
+      })
+      if (goToLogin) {
+        router.push('/login')
+      }
       return
     }
     const res = await toggleFavorite(id, user.id)
     if (res.success) {
       setIsFavorite(res.isFavorite)
+      toast({
+        message: res.isFavorite ? 'Buku disimpan ke Favorit' : 'Buku dihapus dari Favorit',
+        type: res.isFavorite ? 'success' : 'info',
+      })
     }
   }
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault()
     if (!user) {
-      alert('Silakan login terlebih dahulu untuk menulis ulasan.')
+      const goToLogin = await confirm({
+        title: 'Login Diperlukan',
+        message: 'Silakan login terlebih dahulu untuk menulis rating dan ulasan buku.',
+        confirmText: 'Ke Halaman Login',
+        cancelText: 'Nanti Saja',
+        type: 'primary',
+      })
+      if (goToLogin) {
+        router.push('/login')
+      }
       return
     }
     setSubmittingReview(true)
@@ -146,10 +170,17 @@ function BookDetailContent() {
 
     setSubmittingReview(false)
     if (res?.error) {
-      setReviewMsg(res.error)
+      await alert({
+        title: 'Gagal Mengirim Ulasan',
+        message: res.error,
+        type: 'error',
+      })
     } else {
       setCommentInput('')
-      setReviewMsg('Ulasan berhasil dikirim!')
+      toast({
+        message: 'Ulasan Anda berhasil dikirim!',
+        type: 'success',
+      })
       const updatedRevs = await fetchReviews(id)
       setReviewsData(updatedRevs)
     }

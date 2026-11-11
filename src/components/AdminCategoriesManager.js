@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useDialog } from '@/components/DialogContext'
 import {
   fetchCategories,
   addCategory,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react'
 
 export default function AdminCategoriesManager() {
+  const { confirm, alert, toast } = useDialog()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -118,17 +120,27 @@ export default function AdminCategoriesManager() {
   }
 
   const handleDelete = async (cat) => {
-    const confirmed = window.confirm(
-      `Apakah kamu yakin ingin menghapus kategori "${cat.name}"?`
-    )
+    const confirmed = await confirm({
+      title: 'Hapus Kategori',
+      message: `Apakah Anda yakin ingin menghapus kategori "${cat.name}"? Kategori yang masih digunakan oleh buku tidak dapat dihapus.`,
+      confirmText: 'Ya, Hapus Kategori',
+      cancelText: 'Batal',
+      type: 'danger',
+    })
     if (!confirmed) return
 
     const res = await deleteCategory(cat.id, cat.name)
     if (res?.error) {
-      alert(res.error)
+      await alert({
+        title: 'Penghapusan Gagal',
+        message: res.error,
+        type: 'error',
+      })
     } else {
-      setSuccessMsg(`Kategori "${cat.name}" berhasil dihapus dari database.`)
-      setTimeout(() => setSuccessMsg(''), 4000)
+      toast({
+        message: `Kategori "${cat.name}" berhasil dihapus.`,
+        type: 'success',
+      })
       loadCategories()
     }
   }
