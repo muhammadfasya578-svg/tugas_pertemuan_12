@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   fetchBookRequests,
   updateBookRequestStatus,
@@ -28,6 +29,7 @@ import {
 } from 'lucide-react'
 
 export default function AdminBookRequestsPage() {
+  const router = useRouter()
   const { confirm, alert, toast } = useDialog()
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
@@ -108,41 +110,15 @@ export default function AdminBookRequestsPage() {
     }
   }
 
-  const handleConvertToBook = async (req) => {
-    const confirmed = await confirm({
-      title: 'Terbitkan ke Katalog Buku',
-      message: `Tambahkan buku "${req.title}" karya ${req.author} ke koleksi perpustakaan dengan stok awal 1?`,
-      confirmText: 'Tambahkan ke Buku',
-      cancelText: 'Batal',
-      type: 'primary',
-    })
-    if (!confirmed) return
-
-    setProcessingId(req.id)
-    const res = await addBook({
-      title: req.title,
-      author: req.author,
+  const handleConvertToBook = (req) => {
+    const params = new URLSearchParams({
+      action: 'add',
+      title: req.title || '',
+      author: req.author || '',
       category: req.category || 'Umum',
-      stock: 1,
+      from_request: req.id ? req.id.toString() : '',
     })
-
-    if (res?.error) {
-      setProcessingId(null)
-      await alert({
-        title: 'Gagal Menerbitkan Buku',
-        message: res.error,
-        type: 'error',
-      })
-      return
-    }
-
-    await updateBookRequestStatus(req.id, 'disetujui', currentUser)
-    setProcessingId(null)
-    toast({
-      message: `Buku "${req.title}" sukses ditambahkan ke katalog perpustakaan!`,
-      type: 'success',
-    })
-    await reloadRequests()
+    router.push(`/admin/buku?${params.toString()}`)
   }
 
   const handleExport = () => {
@@ -335,6 +311,16 @@ export default function AdminBookRequestsPage() {
                       <button
                         type="button"
                         disabled={processingId === req.id}
+                        onClick={() => handleConvertToBook(req)}
+                        className="min-h-[44px] px-3 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        title="Tambahkan langsung ke katalog buku"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Tambah Buku</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={processingId === req.id}
                         onClick={() => handleUpdateStatus(req.id, 'ditolak')}
                         className="min-h-[44px] px-3.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 hover:bg-amber-100 flex items-center justify-center gap-1.5 transition cursor-pointer"
                       >
@@ -352,7 +338,7 @@ export default function AdminBookRequestsPage() {
                       className="flex-1 min-h-[44px] px-3 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center justify-center gap-1.5 transition cursor-pointer"
                     >
                       <Plus className="w-4 h-4" />
-                      <span>Terbitkan ke Buku</span>
+                      <span>Tambahkan ke Buku</span>
                     </button>
                   )}
 
@@ -451,6 +437,16 @@ export default function AdminBookRequestsPage() {
                               <button
                                 type="button"
                                 disabled={processingId === req.id}
+                                onClick={() => handleConvertToBook(req)}
+                                title="Tambahkan langsung ke katalog buku"
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs transition cursor-pointer"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Tambah Buku</span>
+                              </button>
+                              <button
+                                type="button"
+                                disabled={processingId === req.id}
                                 onClick={() => handleUpdateStatus(req.id, 'ditolak')}
                                 title="Tolak Usulan"
                                 className="p-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100 transition cursor-pointer"
@@ -465,10 +461,10 @@ export default function AdminBookRequestsPage() {
                               type="button"
                               disabled={processingId === req.id}
                               onClick={() => handleConvertToBook(req)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-2xs transition cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs transition cursor-pointer"
                             >
                               <Plus className="w-3.5 h-3.5" />
-                              <span>Terbitkan</span>
+                              <span>Tambahkan ke Buku</span>
                             </button>
                           )}
 

@@ -1,7 +1,8 @@
 'use client'
 
+import { Suspense } from 'react'
 import AdminBooksManager from '@/components/AdminBooksManager'
-import { BookMarked } from 'lucide-react'
+import { BookMarked, Loader2 } from 'lucide-react'
 
 export default function AdminBukuPage() {
   return (
@@ -16,7 +17,16 @@ export default function AdminBukuPage() {
         </p>
       </div>
 
-      <AdminBooksManager />
+      <Suspense
+        fallback={
+          <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
+            <Loader2 className="w-7 h-7 animate-spin text-emerald-600" />
+            <p className="text-sm">Memuat data koleksi buku...</p>
+          </div>
+        }
+      >
+        <AdminBooksManager />
+      </Suspense>
     </div>
   )
 }

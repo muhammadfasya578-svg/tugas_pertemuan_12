@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Dropdown from '@/components/Dropdown'
 import { useDialog } from '@/components/DialogContext'
 import {
@@ -12,6 +13,7 @@ import {
   deleteBookData,
   resolveBookCover,
   exportToCSV,
+  updateBookRequestStatus,
 } from '@/lib/storage'
 import {
   Plus,
@@ -25,10 +27,13 @@ import {
   Upload,
   Image as ImageIcon,
   Download,
+  Sparkles,
 } from 'lucide-react'
 
 export default function AdminBooksManager() {
   const { confirm, alert, toast } = useDialog()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const [books, setBooks] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -36,6 +41,7 @@ export default function AdminBooksManager() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState('add') // 'add' | 'edit'
   const [selectedBook, setSelectedBook] = useState(null)
+  const [fromRequestId, setFromRequestId] = useState(null)
 
   // Form states
   const [title, setTitle] = useState('')
@@ -61,6 +67,34 @@ export default function AdminBooksManager() {
     loadBooks()
   }, [])
 
+  // Buka modal secara otomatis jika diarahkan dari halaman usulan buku atau ada parameter action=add
+  useEffect(() => {
+    const action = searchParams.get('action')
+    const paramTitle = searchParams.get('title')
+    const paramAuthor = searchParams.get('author')
+    const paramCategory = searchParams.get('category')
+    const fromRequest = searchParams.get('from_request')
+
+    if (action === 'add' || paramTitle || fromRequest) {
+      setModalMode('add')
+      setSelectedBook(null)
+      setTitle(paramTitle || '')
+      setAuthor(paramAuthor || '')
+      if (paramCategory) {
+        setCategory(paramCategory)
+      } else if (categories.length > 0) {
+        setCategory(categories[0].name)
+      } else {
+        setCategory('Novel')
+      }
+      setStock('1')
+      setCover('')
+      setErrorMsg('')
+      setFromRequestId(fromRequest || null)
+      setIsModalOpen(true)
+    }
+  }, [searchParams, categories])
+
   // R-32: Keyboard Escape listener for modal
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -75,6 +109,7 @@ export default function AdminBooksManager() {
   const openAddModal = () => {
     setModalMode('add')
     setSelectedBook(null)
+    setFromRequestId(null)
     setTitle('')
     setAuthor('')
     const defaultCat = categories.length > 0 ? categories[0].name : 'Novel'
@@ -88,6 +123,7 @@ export default function AdminBooksManager() {
   const openEditModal = (book) => {
     setModalMode('edit')
     setSelectedBook(book)
+    setFromRequestId(null)
     setTitle(book.title)
     setAuthor(book.author)
     setCategory(book.category)
@@ -100,6 +136,10 @@ export default function AdminBooksManager() {
   const closeModal = () => {
     setIsModalOpen(false)
     setErrorMsg('')
+    setFromRequestId(null)
+    if (searchParams.get('action') || searchParams.get('from_request')) {
+      router.replace('/admin/buku')
+    }
   }
 
   // Handle upload dan kompresi gambar cover di sisi client
@@ -163,6 +203,11 @@ export default function AdminBooksManager() {
     let res
     if (modalMode === 'add') {
       res = await addBook({ title, author, category, stock, cover })
+      if (!res?.error && fromRequestId) {
+        try {
+          await updateBookRequestStatus(fromRequestId, 'disetujui')
+        } catch {}
+      }
     } else {
       res = await updateBookData(selectedBook.id, { title, author, category, stock, cover })
     }
@@ -171,6 +216,14 @@ export default function AdminBooksManager() {
     if (res?.error) {
       setErrorMsg(res.error)
     } else {
+      toast({
+        message: fromRequestId
+          ? `Buku "${title}" sukses diterbitkan dari usulan pembaca!`
+          : modalMode === 'add'
+          ? `Buku "${title}" berhasil ditambahkan!`
+          : `Data buku berhasil diperbarui!`,
+        type: 'success',
+      })
       closeModal()
       loadBooks()
     }
@@ -443,6 +496,18 @@ export default function AdminBooksManager() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {fromRequestId && (
+                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200/80 flex items-start gap-2.5 text-xs text-emerald-900">
+                  <Sparkles className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">Form Terisi Otomatis dari Usulan Buku</span>
+                    <p className="text-[11px] text-emerald-800/90 mt-0.5">
+                      Detail judul, penulis, dan kategori telah diisi dari usulan pembaca. Silakan sesuaikan jumlah stok dan unggah gambar sampul.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Cover Upload Dropzone / Preview */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
