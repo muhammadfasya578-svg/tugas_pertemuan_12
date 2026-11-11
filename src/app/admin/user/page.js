@@ -72,9 +72,17 @@ export default function AdminUserPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs">
-                        {p.name?.charAt(0).toUpperCase() || 'U'}
-                      </div>
+                      {p.avatar_url ? (
+                        <img
+                          src={p.avatar_url}
+                          alt={p.name}
+                          className="w-9 h-9 rounded-xl object-cover border border-slate-200"
+                        />
+                      ) : (
+                        <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700 font-bold text-xs">
+                          {p.name?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                      )}
                       <div>
                         <h3 className="font-bold text-slate-900 text-sm leading-tight">{p.name}</h3>
                         <p className="text-xs text-slate-500 font-mono mt-0.5">{p.email}</p>
@@ -130,9 +138,17 @@ export default function AdminUserPage() {
                       <tr key={p.id} className="hover:bg-slate-50/80 transition">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-semibold text-xs">
-                              {p.name?.charAt(0).toUpperCase() || 'U'}
-                            </div>
+                            {p.avatar_url ? (
+                              <img
+                                src={p.avatar_url}
+                                alt={p.name}
+                                className="w-8 h-8 rounded-full object-cover border border-slate-200"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-semibold text-xs">
+                                {p.name?.charAt(0).toUpperCase() || 'U'}
+                              </div>
+                            )}
                             <span className="font-semibold text-slate-900">{p.name}</span>
                           </div>
                         </td>

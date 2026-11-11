@@ -1,9 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import AppSidebar from '@/components/AppSidebar'
-import { getSession, syncSessionFromSupabase, fetchLoans, formatMemberId } from '@/lib/storage'
+import {
+  getSession,
+  syncSessionFromSupabase,
+  fetchLoans,
+  formatMemberId,
+  compressAvatarImage,
+  saveProfileAvatar,
+  removeProfileAvatar,
+} from '@/lib/storage'
 import { formatDate } from '@/lib/utils'
 import { useDialog } from '@/components/DialogContext'
 import {
@@ -18,6 +26,9 @@ import {
   QrCode,
   ArrowLeft,
   Loader2,
+  Camera,
+  Upload,
+  Trash2,
 } from 'lucide-react'
 
 export default function MemberCardPage() {
@@ -26,6 +37,8 @@ export default function MemberCardPage() {
   const [loans, setLoans] = useState([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     let isMounted = true
@@ -65,6 +78,52 @@ export default function MemberCardPage() {
 
   const handlePrint = () => {
     window.print()
+  }
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast({ message: 'Harap pilih file gambar (JPG, PNG, atau WEBP).', type: 'error' })
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ message: 'Ukuran foto maksimal 5MB.', type: 'error' })
+      return
+    }
+
+    try {
+      setUploading(true)
+      const compressedDataUrl = await compressAvatarImage(file, 400, 400, 0.85)
+      const res = await saveProfileAvatar(profile.id, compressedDataUrl)
+      if (res?.error) {
+        toast({ message: res.error, type: 'error' })
+      } else {
+        setProfile((prev) => ({ ...prev, avatar_url: compressedDataUrl }))
+        toast({ message: 'Foto profil kartu anggota berhasil diperbarui!', type: 'success' })
+      }
+    } catch (err) {
+      toast({ message: err.message || 'Gagal memproses foto', type: 'error' })
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleRemovePhoto = async () => {
+    if (!profile?.id) return
+    try {
+      setUploading(true)
+      await removeProfileAvatar(profile.id)
+      setProfile((prev) => ({ ...prev, avatar_url: null }))
+      toast({ message: 'Foto profil berhasil dihapus.', type: 'success' })
+    } catch {
+      toast({ message: 'Gagal menghapus foto profil', type: 'error' })
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
@@ -176,11 +235,55 @@ export default function MemberCardPage() {
                   {/* Card Body */}
                   <div className="py-6 flex flex-col sm:flex-row items-center sm:items-start gap-6 relative z-10">
                     {/* User Avatar Circle */}
-                    <div className="relative flex-shrink-0">
-                      <div className="w-20 h-20 rounded-2xl bg-linear-to-tr from-emerald-500 to-emerald-300 text-slate-900 flex items-center justify-center text-2xl font-black shadow-lg border-2 border-white/60">
-                        {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
+                    <div className="relative flex-shrink-0 group">
+                      <div className="w-20 h-20 rounded-2xl bg-linear-to-tr from-emerald-500 to-emerald-300 text-slate-900 flex items-center justify-center text-2xl font-black shadow-lg border-2 border-white/60 overflow-hidden relative">
+                        {profile.avatar_url ? (
+                          <img
+                            src={profile.avatar_url}
+                            alt={profile.name || 'Foto Profil'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}</span>
+                        )}
+
+                        {/* Interactive overlay on hover / focus */}
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploading}
+                          aria-label="Ubah foto profil"
+                          className="absolute inset-0 bg-slate-950/65 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 flex flex-col items-center justify-center text-white text-[10px] font-semibold transition-opacity duration-150 cursor-pointer print:hidden"
+                        >
+                          {uploading ? (
+                            <Loader2 className="w-5 h-5 animate-spin text-white" />
+                          ) : (
+                            <>
+                              <Camera className="w-5 h-5 mb-0.5 text-white" />
+                              <span>Ganti</span>
+                            </>
+                          )}
+                        </button>
                       </div>
-                      <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white text-emerald-700 flex items-center justify-center shadow-xs">
+
+                      {/* Camera badge button at the corner */}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        aria-label="Unggah foto profil baru"
+                        className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white text-emerald-700 flex items-center justify-center shadow-md hover:bg-emerald-50 transition border border-emerald-200 cursor-pointer print:hidden"
+                        title="Unggah foto profil"
+                      >
+                        {uploading ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                        ) : (
+                          <Camera className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+
+                      {/* Shield check badge for print mode */}
+                      <div className="hidden print:flex absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white text-emerald-700 items-center justify-center shadow-xs">
                         <ShieldCheck className="w-4 h-4" />
                       </div>
                     </div>
@@ -264,6 +367,65 @@ export default function MemberCardPage() {
                   <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                   Format kartu dirancang pas untuk dicetak seukuran ID card standar atau disimpan sebagai PDF.
                 </p>
+
+                {/* Photo Upload & Management Bar (Screen only) */}
+                <div className="print:hidden mt-5 p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                      <Camera className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                        Foto Profil Kartu Anggota
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Mendukung JPG, PNG, atau WEBP. Foto otomatis disesuaikan proporsinya.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-semibold shadow-2xs transition cursor-pointer min-h-[44px]"
+                    >
+                      {uploading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Memproses...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4" />
+                          <span>{profile.avatar_url ? 'Ganti Foto' : 'Unggah Foto'}</span>
+                        </>
+                      )}
+                    </button>
+
+                    {profile.avatar_url && (
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        disabled={uploading}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50 text-xs font-semibold transition cursor-pointer min-h-[44px]"
+                        title="Hapus foto profil saat ini"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="hidden sm:inline">Hapus</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* STATISTIK & KETENTUAN KARTU */}

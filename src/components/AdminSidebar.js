@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -15,11 +16,25 @@ import {
   BookPlus,
   History,
 } from 'lucide-react'
-import { clearSession } from '@/lib/storage'
+import { clearSession, getSession } from '@/lib/storage'
 
 export default function AdminSidebar({ profile }) {
+  const [currentProfile, setCurrentProfile] = useState(profile)
   const pathname = usePathname()
   const router = useRouter()
+
+  useEffect(() => {
+    setCurrentProfile(profile)
+  }, [profile])
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      const current = getSession()
+      if (current) setCurrentProfile(current)
+    }
+    window.addEventListener('perpus_session_updated', handleUpdate)
+    return () => window.removeEventListener('perpus_session_updated', handleUpdate)
+  }, [])
 
   const menuItems = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -95,14 +110,22 @@ export default function AdminSidebar({ profile }) {
       {/* Admin User Footer */}
       <div className="p-4 border-t border-slate-100 hidden md:block">
         <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl mb-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
-            <ShieldCheck className="w-4 h-4" aria-hidden="true" />
-          </div>
+          {currentProfile?.avatar_url ? (
+            <img
+              src={currentProfile.avatar_url}
+              alt={currentProfile.name}
+              className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-slate-200"
+            />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs flex-shrink-0">
+              <ShieldCheck className="w-4 h-4" aria-hidden="true" />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold text-slate-900 truncate">
-              {profile?.name || 'Admin'}
+              {currentProfile?.name || 'Admin'}
             </p>
-            <p className="text-[11px] text-slate-500 truncate">{profile?.email || 'admin@perpus.com'}</p>
+            <p className="text-[11px] text-slate-500 truncate">{currentProfile?.email || 'admin@perpus.com'}</p>
           </div>
         </div>
 

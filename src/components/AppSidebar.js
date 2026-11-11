@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -17,13 +17,27 @@ import {
   Heart,
   CreditCard,
 } from 'lucide-react'
-import { clearSession } from '@/lib/storage'
+import { clearSession, getSession } from '@/lib/storage'
 
 export default function AppSidebar({ profile }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [userProfile, setUserProfile] = useState(profile)
   const pathname = usePathname()
   const router = useRouter()
+
+  useEffect(() => {
+    setUserProfile(profile)
+  }, [profile])
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      const current = getSession()
+      if (current) setUserProfile(current)
+    }
+    window.addEventListener('perpus_session_updated', handleUpdate)
+    return () => window.removeEventListener('perpus_session_updated', handleUpdate)
+  }, [])
 
   const handleLogout = () => {
     clearSession()
@@ -220,22 +234,30 @@ export default function AppSidebar({ profile }) {
         {/* Footer / User Profile & Logout */}
         <div className="p-3 border-t border-slate-100/80 space-y-2">
           {/* User Info */}
-          {profile && (
+          {userProfile && (
             <div
               className={`p-2 rounded-2xl bg-slate-50/80 border border-slate-200/60 flex items-center gap-2.5 ${
                 isCollapsed ? 'justify-center p-2' : ''
               }`}
             >
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
-                {profile.name ? profile.name.charAt(0).toUpperCase() : 'U'}
-              </div>
+              {userProfile.avatar_url ? (
+                <img
+                  src={userProfile.avatar_url}
+                  alt={userProfile.name}
+                  className="w-8 h-8 rounded-xl object-cover flex-shrink-0 border border-slate-200 shadow-2xs"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
+                  {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+              )}
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-slate-900 truncate leading-tight">
-                    {profile.name}
+                    {userProfile.name}
                   </p>
                   <p className="text-[10px] text-slate-500 truncate capitalize">
-                    {profile.role === 'admin' ? 'Administrator' : 'Pembaca'}
+                    {userProfile.role === 'admin' ? 'Administrator' : 'Pembaca'}
                   </p>
                 </div>
               )}

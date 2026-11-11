@@ -15,8 +15,12 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
   email text not null,
-  role text not null default 'user' check (role in ('admin', 'user'))
+  role text not null default 'user' check (role in ('admin', 'user')),
+  avatar_url text
 );
+
+-- Tambahkan kolom avatar_url jika tabel sudah pernah dibuat sebelumnya
+alter table public.profiles add column if not exists avatar_url text;
 
 -- 3. TABEL BUKU
 create table if not exists public.books (
@@ -130,6 +134,11 @@ create policy "categories: admin delete" on public.categories
 drop policy if exists "profiles: baca sendiri atau admin" on public.profiles;
 create policy "profiles: baca sendiri atau admin" on public.profiles
   for select to authenticated using (id = auth.uid() or public.is_admin());
+
+drop policy if exists "profiles: update sendiri atau admin" on public.profiles;
+create policy "profiles: update sendiri atau admin" on public.profiles
+  for update to authenticated using (id = auth.uid() or public.is_admin())
+  with check (id = auth.uid() or public.is_admin());
 
 -- Policies for books
 drop policy if exists "books: semua user login boleh baca" on public.books;

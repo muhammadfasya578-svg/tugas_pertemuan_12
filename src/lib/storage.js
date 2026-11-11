@@ -82,11 +82,15 @@ export async function syncSessionFromSupabase() {
       .eq('id', user.id)
       .maybeSingle()
 
+    const localAvatar = typeof window !== 'undefined' ? localStorage.getItem('perpus_user_avatar_' + user.id) : null
+    const avatarUrl = profile?.avatar_url || user.user_metadata?.avatar_url || localAvatar || null
+
     const sessionUser = {
       id: user.id,
       email: user.email,
       name: profile?.name || user.user_metadata?.name || user.email.split('@')[0],
       role: profile?.role || 'user',
+      avatar_url: avatarUrl,
     }
     setSession(sessionUser)
     return sessionUser
@@ -128,11 +132,15 @@ export async function loginUser(email, password) {
         .eq('id', data.user.id)
         .maybeSingle()
 
+      const localAvatar = typeof window !== 'undefined' ? localStorage.getItem('perpus_user_avatar_' + data.user.id) : null
+      const avatarUrl = profile?.avatar_url || data.user.user_metadata?.avatar_url || localAvatar || null
+
       const sessionUser = {
         id: data.user.id,
         email: data.user.email,
         name: profile?.name || data.user.user_metadata?.name || trimmedEmail.split('@')[0],
         role: profile?.role || 'user',
+        avatar_url: avatarUrl,
       }
       setSession(sessionUser)
       return { user: sessionUser }
@@ -417,7 +425,15 @@ export async function fetchProfiles() {
   if (supabase) {
     try {
       const { data, error } = await supabase.from('profiles').select('*')
-      if (!error && data) return data
+      if (!error && data) {
+        return data.map((p) => {
+          const localAvatar = typeof window !== 'undefined' ? localStorage.getItem('perpus_user_avatar_' + p.id) : null
+          return {
+            ...p,
+            avatar_url: p.avatar_url || localAvatar || null,
+          }
+        })
+      }
     } catch {}
   }
   return []
@@ -1343,4 +1359,131 @@ export function formatMemberId(user) {
   if (!user?.id) return 'LIB-2026-0001'
   const idClean = user.id.replace(/-/g, '').slice(0, 6).toUpperCase()
   return `LIB-2026-${idClean}`
+}
+
+export function compressAvatarImage(file, maxWidth = 400, maxHeight = 400, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith('image/')) {
+      return reject(new Error('File yang dipilih bukan gambar'))
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const img = new Image()
+      img.onload = () => {
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width)
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height)
+            height = maxHeight
+          }
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        const dataUrl = canvas.toDataURL('image/jpeg', quality)
+        resolve(dataUrl)
+      }
+      img.onerror = () => reject(new Error('Gagal memproses gambar'))
+      img.src = e.target.result
+    }
+    reader.onerror = () => reject(new Error('Gagal membaca file'))
+    reader.readAsDataURL(file)
+  })
+}
+
+export async function saveProfileAvatar(userId, avatarDataUrl) {
+  if (!userId) return { error: 'ID Pengguna tidak valid' }
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem('perpus_user_avatar_' + userId, avatarDataUrl)
+    } catch {}
+  }
+
+  const current = getSession()
+  if (current && current.id === userId) {
+    const updated = { ...current, avatar_url: avatarDataUrl }
+    setSession(updated)
+  }
+
+  const supabase = getSupabase()
+  if (supabase) {
+    try {
+      await supabase.auth.updateUser({
+        data: { avatar_url: avatarDataUrl },
+      })
+    } catch {}
+
+    try {
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarDataUrl })
+        .eq('id', userId)
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('perpus_session_updated', {
+        detail: { userId, avatar_url: avatarDataUrl },
+      })
+    )
+  }
+
+  return { success: true, avatar_url: avatarDataUrl }
+}
+
+export async function removeProfileAvatar(userId) {
+  if (!userId) return { error: 'ID Pengguna tidak valid' }
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('perpus_user_avatar_' + userId)
+    } catch {}
+  }
+
+  const current = getSession()
+  if (current && current.id === userId) {
+    const updated = { ...current, avatar_url: null }
+    setSession(updated)
+  }
+
+  const supabase = getSupabase()
+  if (supabase) {
+    try {
+      await supabase.auth.updateUser({
+        data: { avatar_url: null },
+      })
+    } catch {}
+
+    try {
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', userId)
+    } catch {}
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('perpus_session_updated', {
+        detail: { userId, avatar_url: null },
+      })
+    )
+  }
+
+  return { success: true }
 }
