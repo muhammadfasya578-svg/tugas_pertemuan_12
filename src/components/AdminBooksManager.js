@@ -272,9 +272,9 @@ export default function AdminBooksManager() {
   return (
     <div className="space-y-6">
       {/* Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* Search */}
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative flex-1 w-full sm:max-w-sm">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
             <Search className="w-4 h-4 text-slate-500" aria-hidden="true" />
           </div>
@@ -284,16 +284,16 @@ export default function AdminBooksManager() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari buku, penulis, atau kategori..."
             aria-label="Cari buku, penulis, atau kategori"
-            className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className="w-full h-11 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs"
           />
         </div>
 
         {/* Buttons */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={handleExportBooks}
-            className="inline-flex items-center gap-1.5 px-3.5 h-10 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 h-11 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition cursor-pointer"
             title="Ekspor katalog buku ke format CSV"
           >
             <Download className="w-3.5 h-3.5 text-emerald-700" aria-hidden="true" />
@@ -303,10 +303,10 @@ export default function AdminBooksManager() {
           <button
             type="button"
             onClick={openAddModal}
-            className="inline-flex items-center gap-2 px-4 h-10 rounded-xl bg-emerald-700 text-white font-medium text-sm hover:bg-emerald-800 active:bg-emerald-900 transition shadow-xs cursor-pointer"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 h-11 rounded-xl bg-emerald-700 text-white font-medium text-sm hover:bg-emerald-800 active:bg-emerald-900 transition shadow-2xs cursor-pointer"
           >
             <Plus className="w-4 h-4" aria-hidden="true" />
-            <span>Tambah Buku Baru</span>
+            <span>Tambah Buku</span>
           </button>
         </div>
       </div>
@@ -473,7 +473,7 @@ export default function AdminBooksManager() {
           aria-labelledby="modal-book-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs"
         >
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-4 sm:p-8 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
               <h3 id="modal-book-title" className="text-lg font-bold text-slate-900">
                 {modalMode === 'add' ? 'Tambah Buku Baru' : 'Edit Data Buku'}

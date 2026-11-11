@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { fetchProfiles, fetchLoans } from '@/lib/storage'
-import { Users, Shield, User, Loader2 } from 'lucide-react'
+import { fetchProfiles, fetchLoans, exportToCSV } from '@/lib/storage'
+import { Users, Shield, User, Loader2, Search, Download } from 'lucide-react'
 
 export default function AdminUserPage() {
   const [profiles, setProfiles] = useState([])
   const [loanCountMap, setLoanCountMap] = useState({})
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     let isMounted = true
@@ -40,16 +41,62 @@ export default function AdminUserPage() {
     }
   }, [])
 
+  const handleExportCSV = () => {
+    if (profiles.length === 0) return
+    const headers = ['ID', 'Nama Lengkap', 'Email', 'Role', 'Peminjaman Aktif']
+    const rows = filteredProfiles.map((p) => [
+      p.id,
+      p.name,
+      p.email,
+      p.role,
+      loanCountMap[p.id] || 0,
+    ])
+    exportToCSV(`daftar_pengguna_perpus_${new Date().toISOString().slice(0, 10)}.csv`, headers, rows)
+  }
+
+  const filteredProfiles = profiles.filter((p) => {
+    const s = search.toLowerCase()
+    return (
+      (p.name && p.name.toLowerCase().includes(s)) ||
+      (p.email && p.email.toLowerCase().includes(s))
+    )
+  })
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
-          <Users className="w-6 h-6 text-emerald-700" aria-hidden="true" />
-          <span>Daftar Pengguna</span>
-        </h1>
-        <p className="text-slate-600 text-sm mt-1">
-          Daftar seluruh akun terdaftar di Supabase dan jumlah peminjaman buku aktif masing-masing pengguna.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2.5">
+            <Users className="w-6 h-6 text-emerald-700" aria-hidden="true" />
+            <span>Daftar Pengguna</span>
+          </h1>
+          <p className="text-slate-600 text-xs sm:text-sm mt-1">
+            Daftar seluruh akun terdaftar di Supabase dan jumlah peminjaman buku aktif masing-masing pengguna.
+          </p>
+        </div>
+      </div>
+
+      {/* Search and Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative flex-1 w-full sm:max-w-sm">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari nama atau email pengguna..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-11 pl-10 pr-4 text-sm rounded-xl border border-slate-200 bg-white placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleExportCSV}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 h-11 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition cursor-pointer"
+        >
+          <Download className="w-3.5 h-3.5 text-emerald-700" />
+          <span>Ekspor CSV</span>
+        </button>
       </div>
 
       {loading ? (
@@ -57,11 +104,11 @@ export default function AdminUserPage() {
           <Loader2 className="w-8 h-8 animate-spin text-emerald-600 mb-3" />
           <p>Memuat daftar pengguna dari Supabase...</p>
         </div>
-      ) : profiles.length > 0 ? (
+      ) : filteredProfiles.length > 0 ? (
         <div className="space-y-4">
           {/* TAMPILAN MOBILE: Kartu Pengguna Responsif (md:hidden) */}
           <div className="md:hidden space-y-3">
-            {profiles.map((p) => {
+            {filteredProfiles.map((p) => {
               const activeCount = loanCountMap[p.id] || 0
               const isAdmin = p.role === 'admin'
 
@@ -130,7 +177,7 @@ export default function AdminUserPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {profiles.map((p) => {
+                  {filteredProfiles.map((p) => {
                     const activeCount = loanCountMap[p.id] || 0
                     const isAdmin = p.role === 'admin'
 

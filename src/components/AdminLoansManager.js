@@ -186,24 +186,24 @@ export default function AdminLoansManager() {
   return (
     <div className="space-y-6">
       {/* Top Bar: Action Buttons & Fine Summary */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 print:hidden">
         <div className="flex items-center flex-wrap gap-2">
           {totalPendingFines > 0 && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
               <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Total Denda Tertunggak: {formatRupiah(totalPendingFines)}</span>
+              <span>Total Denda: {formatRupiah(totalPendingFines)}</span>
             </div>
           )}
           <span className="text-xs text-slate-500 font-medium">
-            Total {filteredLoans.length} transaksi peminjaman
+            Total {filteredLoans.length} transaksi
           </span>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 min-h-[44px] rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer"
             title="Cetak tabel laporan peminjaman"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" aria-hidden="true" />
@@ -213,7 +213,7 @@ export default function AdminLoansManager() {
           <button
             type="button"
             onClick={handleExportCSV}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 min-h-[44px] rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition cursor-pointer"
             title="Ekspor seluruh data peminjaman ke format CSV"
           >
             <Download className="w-3.5 h-3.5" aria-hidden="true" />
@@ -223,8 +223,8 @@ export default function AdminLoansManager() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 print:hidden">
+        <div className="relative flex-1 w-full sm:max-w-sm">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
             <Search className="w-4 h-4 text-slate-500" aria-hidden="true" />
           </div>
@@ -234,12 +234,12 @@ export default function AdminLoansManager() {
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari peminjam, email, atau judul buku..."
             aria-label="Cari peminjam, email, atau judul buku"
-            className="w-full h-10 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            className="w-full h-11 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           />
         </div>
 
         {/* Status Filter Chips */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
           {[
             { id: 'semua', label: 'Semua' },
             { id: 'dipinjam', label: 'Aktif Dipinjam' },
@@ -251,7 +251,7 @@ export default function AdminLoansManager() {
               <button
                 key={item.id}
                 onClick={() => setFilterStatus(item.id)}
-                className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition cursor-pointer ${
+                className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition cursor-pointer ${
                   isActive
                     ? 'bg-emerald-700 text-white font-semibold'
                     : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'

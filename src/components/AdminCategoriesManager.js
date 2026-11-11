@@ -167,8 +167,8 @@ export default function AdminCategoriesManager() {
       )}
 
       {/* Toolbar: Search, Statistik, dan Tombol Tambah */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="relative flex-1 w-full sm:max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -179,7 +179,7 @@ export default function AdminCategoriesManager() {
           />
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <div className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-600 shadow-2xs">
             <Tags className="w-3.5 h-3.5 text-emerald-600" />
             <span>
@@ -189,7 +189,7 @@ export default function AdminCategoriesManager() {
 
           <button
             onClick={openAddModal}
-            className="h-11 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-2xs transition cursor-pointer"
+            className="w-full sm:w-auto h-11 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-sm flex items-center justify-center gap-2 shadow-2xs transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Kategori</span>

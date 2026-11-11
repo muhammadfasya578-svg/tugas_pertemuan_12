@@ -57,9 +57,9 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
-              <LayoutDashboard className="w-6 h-6 text-emerald-700" aria-hidden="true" />
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <LayoutDashboard className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-700" aria-hidden="true" />
               <span>Dashboard Ringkasan</span>
             </h1>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
@@ -67,14 +67,14 @@ export default function AdminDashboardPage() {
               <span>Supabase Live</span>
             </span>
           </div>
-          <p className="text-slate-600 text-sm mt-1">
+          <p className="text-slate-600 text-xs sm:text-sm mt-1">
             Pantau metrik langsung dari database Supabase PostgreSQL secara real-time.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {totalFines > 0 && (
-            <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold w-full sm:w-auto justify-center">
               <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Denda Tertunggak: {formatRupiah(totalFines)}</span>
             </div>
@@ -84,7 +84,7 @@ export default function AdminDashboardPage() {
             type="button"
             onClick={loadData}
             disabled={refreshing}
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-3.5 py-2.5 min-h-[44px] rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-xs transition cursor-pointer disabled:opacity-50"
             title="Sinkronkan data dengan Supabase"
             aria-label="Segarkan data dari Supabase"
           >
@@ -96,36 +96,36 @@ export default function AdminDashboardPage() {
 
       {/* 4 StatCards */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs animate-pulse flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-slate-100" />
+            <div key={i} className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs animate-pulse flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-100" />
               <div className="space-y-2 flex-1">
-                <div className="h-3 bg-slate-100 rounded-sm w-20" />
-                <div className="h-6 bg-slate-100 rounded-sm w-12" />
+                <div className="h-3 bg-slate-100 rounded-sm w-16" />
+                <div className="h-5 sm:h-6 bg-slate-100 rounded-sm w-10" />
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {stats.map((stat, i) => {
             const Icon = ICON_MAP[stat.iconName] || BookOpen
             return (
               <div
                 key={i}
-                className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex items-center gap-4"
+                className="bg-white rounded-2xl border border-slate-200 p-3.5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-4"
               >
                 <div
-                  className={`w-14 h-14 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center flex-shrink-0`}
+                  className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center flex-shrink-0`}
                 >
-                  <Icon className="w-7 h-7" aria-hidden="true" />
+                  <Icon className="w-5 h-5 sm:w-7 sm:h-7" aria-hidden="true" />
                 </div>
-                <div>
-                  <p className="text-xs font-medium text-slate-600 uppercase tracking-wider">
+                <div className="min-w-0">
+                  <p className="text-[11px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
                     {stat.label}
                   </p>
-                  <p className="text-2xl font-bold text-slate-900 mt-0.5">
+                  <p className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5 truncate">
                     {stat.value}
                   </p>
                 </div>
